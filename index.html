@@ -46,8 +46,8 @@
   .field input{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;font-size:14px;color:var(--ink);background:#fbfcfd;}
   .field input:focus{outline:2px solid var(--accent);outline-offset:0;border-color:var(--accent);}
   .field .hours{font-weight:500;color:var(--accent);text-transform:none;letter-spacing:0;}
-  .pmark{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;
-    color:#fff;font-size:11px;font-weight:800;margin-right:6px;vertical-align:-3px;box-shadow:0 1px 2px rgba(0,0,0,.2);}
+  .pmark{display:inline-block;width:13px;height:13px;border-radius:4px;
+    margin-right:6px;vertical-align:-1px;box-shadow:0 1px 2px rgba(0,0,0,.2);}
 
   /* Barre d'outils */
   .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px;}
@@ -113,10 +113,12 @@
   .card:active{cursor:grabbing;}
   .card.armed{outline:3px solid var(--accent);outline-offset:1px;}
   .card.conflict{outline:2px solid var(--warn);outline-offset:0;}
-  .card .top{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+  .card .top{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;}
   .card .cls{font-weight:800;font-size:14px;}
+  .card .profs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
   .card .badge{font-size:10.5px;font-weight:800;color:#fff;border:1px solid rgba(255,255,255,.6);
     border-radius:5px;padding:1px 6px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.22);letter-spacing:.02em;white-space:nowrap;}
+  .card .badge.co{border-style:dashed;}
   .card .row2{display:flex;align-items:center;justify-content:space-between;gap:4px;margin-top:4px;}
   .card .fac{font-size:10.5px;font-weight:600;opacity:.95;cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
   .card .fac::before{content:"●";font-size:9px;}
@@ -124,6 +126,8 @@
   .card .act{cursor:pointer;font-size:11px;font-weight:800;background:rgba(255,255,255,.85);color:#16202b;
     border-radius:4px;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;border:none;line-height:1;}
   .card .act:hover{background:#fff;}
+  .card .act.co{width:auto;padding:0 5px;font-size:10px;}
+  .card .act.co.on{background:#475569;color:#fff;}
   .card .warn{position:absolute;top:-7px;right:-7px;background:var(--warn);color:#fff;border-radius:50%;
     width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;}
 
@@ -218,7 +222,7 @@
 
   <footer class="note">
     Données enregistrées dans votre navigateur (localStorage) — rien n'est envoyé en ligne. Pour publier l'outil, déposez ce fichier <code>index.html</code> sur GitHub Pages.<br>
-    Astuce : le badge bleu sur chaque carte (P1 / P2 / TZR) se clique pour changer d'enseignant ; le libellé d'installation se clique pour changer de lieu (et donc de couleur). Le bouton ⤴ déplace une carte au doigt sur mobile.
+    Astuce : le badge coloré sur chaque carte (bleu = Ens. 1, violet = Ens. 2) se clique pour basculer l'enseignant titulaire ; le bouton <b>co</b> ajoute ou retire la <b>co-animation TZR</b> (ardoise — le TZR intervient toujours en binôme, jamais seul) ; le libellé d'installation se clique pour changer de lieu. Le bouton ⤴ déplace une carte au doigt sur mobile.
   </footer>
 
 </div>
@@ -246,11 +250,11 @@ const FAC = {
   gym     :{label:'Gymnastique',   bg:'#f4d03f', fg:'#3d3300', cap:1}
 };
 const FAC_ORDER = ['gymnase','dojo','plateau','gym'];
-/* repère visuel par enseignant : couleur + forme (lisible en N&B / daltonisme) */
+/* repère visuel par enseignant : couleur propre (sans glyphe) */
 const PROF_STYLE = [
-  {color:'#1f5fbf', shape:'\u25CF'},  // Enseignant 1 : rond bleu
-  {color:'#8e44ad', shape:'\u25B2'},  // Enseignant 2 : triangle violet
-  {color:'#475569', shape:'\u25C6'}   // TZR : losange ardoise
+  {color:'#1f5fbf'},  // Enseignant 1 : bleu
+  {color:'#8e44ad'},  // Enseignant 2 : violet
+  {color:'#475569'}   // TZR : ardoise
 ];
 const MAX_PARALLEL = 2;   // 2 cours simultanés maxi par créneau
 const STORAGE_KEY = 'edt_eps_v1';
@@ -287,6 +291,11 @@ function load(){
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw){ const s = JSON.parse(raw); if(s && s.meta){ state = Object.assign(defaultState(), s); } }
   }catch(e){}
+  // migration : TZR ne peut plus être en solo -> il devient co-animateur
+  Object.keys(state.cells).forEach(k=>state.cells[k].forEach(c=>{
+    if(c.co===undefined) c.co=null;
+    if(c.prof===2){ c.prof=0; c.co=2; }   // ancien TZR solo -> Ens.1 + co TZR
+  }));
 }
 let saveTimer=null;
 function flashSaved(){
@@ -305,23 +314,28 @@ function initials(name){
 }
 function cellsOf(key){ if(!state.cells[key]) state.cells[key]=[]; return state.cells[key]; }
 function newId(){ return 'c'+(state.seq++); }
+function teachersOf(c){ return c.co==null ? [c.prof] : [c.prof, c.co]; }
 
 /* ---------- Conflits ---------- */
-/* Conflit dans une même case : même enseignant 2x, ou installation au-delà de sa capacité */
+/* Dans une même case : 2 cours maxi, un enseignant ne peut diriger/co-animer 2 cours à la fois,
+   et une installation ne peut servir au-delà de sa capacité (½ plateau = 2). */
 function computeConflicts(){
   let total=0;
   Object.keys(state.cells).forEach(key=>{
     const cards = state.cells[key];
-    const byProf={}, byFac={};
-    cards.forEach(c=>{ c._conf=false; c._reason=''; byProf[c.prof]=(byProf[c.prof]||0)+1; byFac[c.fac]=(byFac[c.fac]||0)+1; });
+    const profCount={}, byFac={};
+    cards.forEach(c=>{ c._conf=false; c._reason='';
+      teachersOf(c).forEach(p=>profCount[p]=(profCount[p]||0)+1);
+      byFac[c.fac]=(byFac[c.fac]||0)+1;
+    });
     const tooMany = cards.length > MAX_PARALLEL;
     cards.forEach(c=>{
       const reasons=[];
       if(tooMany) reasons.push('plus de 2 cours en parallèle');
-      if(byProf[c.prof]>1) reasons.push('enseignant déjà occupé');
+      teachersOf(c).forEach(p=>{ if(profCount[p]>1) reasons.push((state.profs[p]||'enseignant')+' déjà occupé(e)'); });
       const cap = (FAC[c.fac]&&FAC[c.fac].cap)||1;
       if(byFac[c.fac]>cap) reasons.push((FAC[c.fac]?FAC[c.fac].label:'installation')+' déjà pris(e)');
-      if(reasons.length){ c._conf=true; c._reason=reasons.join(' · '); total++; }
+      if(reasons.length){ c._conf=true; c._reason=Array.from(new Set(reasons)).join(' · '); total++; }
     });
   });
   return total;
@@ -351,15 +365,15 @@ function setVal(id,v){ const el=document.getElementById(id); if(el && document.a
 function renderProfMarks(){
   for(let i=0;i<3;i++){
     const el=document.getElementById('pm'+i);
-    if(el){ el.textContent=PROF_STYLE[i].shape; el.style.background=PROF_STYLE[i].color; }
+    if(el){ el.textContent=''; el.style.background=PROF_STYLE[i].color; }
   }
 }
 
 function renderHours(){
   const h=[0,0,0];
   Object.keys(state.cells).forEach(key=>{
-    const isAS = key.indexOf('-as')>-1;
-    state.cells[key].forEach(c=>{ h[c.prof]+= isAS?HOUR_PER_AS:HOUR_PER_SLOT; });
+    const add = key.indexOf('-as')>-1 ? HOUR_PER_AS : HOUR_PER_SLOT;
+    state.cells[key].forEach(c=>{ h[c.prof]+=add; if(c.co!=null) h[c.co]+=add; });
   });
   for(let i=0;i<3;i++){
     const span=document.getElementById('h-p'+i);
@@ -441,19 +455,26 @@ function renderCards(key){
   const cards = state.cells[key]||[];
   return cards.map(c=>{
     const f=FAC[c.fac]||FAC.gymnase;
-    const ps=PROF_STYLE[c.prof]||PROF_STYLE[2];
+    const ps=PROF_STYLE[c.prof]||PROF_STYLE[0];
     const armed = arm && arm.type==='card' && arm.id===c.id ? ' armed':'';
     const conf = c._conf ? ' conflict':'';
+    const co = c.co!=null;
+    const coStyle = PROF_STYLE[c.co!=null?c.co:2];
+    const coBadge = co
+      ? `<span class="badge co" style="background:${coStyle.color}" title="${escHtml(state.profs[c.co]||'TZR')} en co-animation — cliquez pour retirer" onclick="event.stopPropagation();toggleCo('${key}','${c.id}')">${initials(state.profs[c.co])}</span>`
+      : '';
     return `<div class="card${armed}${conf}" draggable="true" style="background:${f.bg};color:${f.fg};border-left-color:${ps.color}"
         ondragstart="dragCard(event,'${c.id}')" onclick="event.stopPropagation()">
       ${c._conf?`<span class="warn" title="${escHtml(c._reason||'conflit')}">!</span>`:''}
-      <div class="top">
-        <span class="cls">${escHtml(c.classe)}</span>
-        <span class="badge" style="background:${ps.color}" title="${escHtml(state.profs[c.prof]||'')} — cliquez pour changer d'enseignant" onclick="event.stopPropagation();cycleProf('${key}','${c.id}')">${ps.shape} ${initials(state.profs[c.prof])}</span>
+      <div class="top"><span class="cls">${escHtml(c.classe)}</span></div>
+      <div class="profs">
+        <span class="badge" style="background:${ps.color}" title="${escHtml(state.profs[c.prof]||'')} — cliquez pour basculer Enseignant 1 / 2" onclick="event.stopPropagation();cycleProf('${key}','${c.id}')">${initials(state.profs[c.prof])}</span>
+        ${coBadge}
       </div>
       <div class="row2">
         <span class="fac" title="Cliquez pour changer d'installation" onclick="event.stopPropagation();cycleFac('${key}','${c.id}')">${f.label}</span>
         <span class="acts">
+          <button class="act co${co?' on':''}" title="Co-animation TZR (activer / désactiver)" onclick="event.stopPropagation();toggleCo('${key}','${c.id}')">co</button>
           <button class="act" title="Déplacer (tactile)" onclick="event.stopPropagation();armCard('${c.id}')">⤴</button>
           <button class="act" title="Supprimer" onclick="event.stopPropagation();delCard('${key}','${c.id}')">✕</button>
         </span>
@@ -515,7 +536,7 @@ function cellTap(key){
 
 /* ---------- Manipulation des cartes ---------- */
 function placeNew(key,classe){
-  cellsOf(key).push({id:newId(),classe:classe,prof:0,fac:state.activeFac});
+  cellsOf(key).push({id:newId(),classe:classe,prof:0,co:null,fac:state.activeFac});
 }
 function findCard(id){
   for(const k in state.cells){ const c=state.cells[k].find(x=>x.id===id); if(c) return c; }
@@ -530,7 +551,8 @@ function moveCard(id,destKey){
   if(card) cellsOf(destKey).push(card);
 }
 function delCard(key,id){ const arr=state.cells[key]; if(!arr) return; const i=arr.findIndex(x=>x.id===id); if(i>-1)arr.splice(i,1); save(); render(); }
-function cycleProf(key,id){ const c=(state.cells[key]||[]).find(x=>x.id===id); if(!c)return; c.prof=(c.prof+1)%state.profs.length; save(); render(); }
+function cycleProf(key,id){ const c=(state.cells[key]||[]).find(x=>x.id===id); if(!c)return; c.prof = c.prof===0?1:0; save(); render(); }
+function toggleCo(key,id){ const c=(state.cells[key]||[]).find(x=>x.id===id); if(!c)return; c.co = (c.co==null)?2:null; save(); render(); }
 function cycleFac(key,id){ const c=(state.cells[key]||[]).find(x=>x.id===id); if(!c)return; const i=FAC_ORDER.indexOf(c.fac); c.fac=FAC_ORDER[(i+1)%FAC_ORDER.length]; save(); render(); }
 function setActiveFac(k){ state.activeFac=k; save(); render(); }
 
@@ -556,7 +578,9 @@ function bindInputs(){
 function cellText(key){
   return (state.cells[key]||[]).map(c=>{
     const f=FAC[c.fac]?FAC[c.fac].label:'';
-    return `${c.classe} (${initials(state.profs[c.prof])}) – ${f}`;
+    const t = c.co==null ? initials(state.profs[c.prof])
+                         : initials(state.profs[c.prof])+' + '+initials(state.profs[c.co])+' (co)';
+    return `${c.classe} (${t}) – ${f}`;
   }).join('  •  ');
 }
 function exportXLSX(){
@@ -584,7 +608,7 @@ function exportXLSX(){
   XLSX.utils.book_append_sheet(wb,ws2,'AS Mercredi');
   // Feuille 3 : récap enseignants
   const h=[0,0,0];
-  Object.keys(state.cells).forEach(key=>{const isAS=key.indexOf('-as')>-1;state.cells[key].forEach(c=>h[c.prof]+=isAS?1:2);});
+  Object.keys(state.cells).forEach(key=>{const add=key.indexOf('-as')>-1?1:2;state.cells[key].forEach(c=>{h[c.prof]+=add;if(c.co!=null)h[c.co]+=add;});});
   const a3=[['Enseignant','Heures EPS / semaine']];
   state.profs.forEach((p,i)=>a3.push([p,h[i]]));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a3),'Récap enseignants');
