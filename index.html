@@ -37,6 +37,10 @@
   .field .hours{font-weight:500;color:var(--accent);text-transform:none;letter-spacing:0;}
   .pmark{display:inline-block;width:13px;height:13px;border-radius:4px;margin-right:6px;vertical-align:-1px;box-shadow:0 1px 2px rgba(0,0,0,.2);}
   .ptitle-row{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px;}
+  .daterow{display:flex;gap:6px;}
+  .daterow input{flex:1;min-width:0;padding:6px 7px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;color:var(--ink);background:#fbfcfd;}
+  .calnote{margin-top:10px;font-size:11.5px;color:var(--muted);line-height:1.5;}
+  .calnote b{color:var(--ink-soft);}
 
   .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px;}
   button.btn{cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);
@@ -74,7 +78,7 @@
 
   .gridcard{padding:0;margin-bottom:18px;overflow:auto;}
   table.edt,table.as{border-collapse:collapse;}
-  table.edt{width:100%;min-width:1180px;}
+  table.edt{width:100%;min-width:1420px;}
   table.edt th,table.edt td,table.as th,table.as td{border:1px solid var(--line);}
   .dayhead{background:#eef2f7;font-size:14px;font-weight:800;padding:8px;text-align:center;}
   .lanehead{background:#f4f7fa;font-size:12px;font-weight:700;padding:6px 5px;text-align:center;color:var(--ink);max-width:175px;}
@@ -82,7 +86,7 @@
   .timecol{width:120px;text-align:left;padding:10px 11px;vertical-align:middle;}
   .timecol .clabel{font-weight:800;font-size:12.5px;}
   .timecol .csub{font-size:10.5px;color:var(--muted);letter-spacing:.03em;text-transform:uppercase;margin-top:2px;}
-  td.lane{vertical-align:top;padding:4px;min-width:150px;max-width:175px;background:#fff;transition:.1s;}
+  td.lane{vertical-align:top;padding:4px;min-width:182px;max-width:205px;background:#fff;transition:.1s;}
   td.lane.dropok{background:#eaf2fe;outline:2px dashed var(--accent);outline-offset:-3px;}
   td.lane.disabled{background:repeating-linear-gradient(45deg,#f3f5f7,#f3f5f7 7px,#eceff2 7px,#eceff2 14px);}
   td.lane.disabled .nope{font-size:10.5px;color:var(--muted);text-align:center;display:block;padding:18px 0;}
@@ -111,6 +115,8 @@
     padding:2px 6px;font-family:inherit;}
   .prow .pact::placeholder{color:rgba(0,0,0,.32);}
   .prow .pact:focus{outline:2px solid rgba(255,255,255,.8);outline-offset:-2px;}
+  .prow .pcount{flex:none;align-self:center;margin:2px 0;font-size:9px;font-weight:800;white-space:nowrap;
+    background:rgba(255,255,255,.85);color:#16202b;border-radius:5px;padding:2px 5px;box-shadow:0 1px 2px rgba(0,0,0,.15);}
   .prow .pfac{flex:none;align-self:center;margin:2px 3px;border:none;cursor:pointer;
     background:rgba(255,255,255,.92);color:#16202b;font-size:9.5px;font-weight:800;
     padding:2px 6px;border-radius:5px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.18);letter-spacing:.01em;}
@@ -161,13 +167,14 @@
   </section>
 
   <section class="panel params">
-    <div class="ptitle-row">Périodes de l'année — dates de chaque cycle (P1 → P4)</div>
+    <div class="ptitle-row">Périodes de l'année (cycles) — dates de début / fin · le nombre de séances est calculé pour la zone C</div>
     <div class="grid-meta">
-      <div class="field"><label>Période 1</label><input id="in-per0" type="text" placeholder="ex : 01/09 → 14/11"></div>
-      <div class="field"><label>Période 2</label><input id="in-per1" type="text" placeholder="ex : 17/11 → 23/01"></div>
-      <div class="field"><label>Période 3</label><input id="in-per2" type="text" placeholder="ex : 26/01 → 03/04"></div>
-      <div class="field"><label>Période 4</label><input id="in-per3" type="text" placeholder="ex : 07/04 → 03/07"></div>
+      <div class="field"><label>Période 1 — début → fin</label><div class="daterow"><input id="in-per0a" type="date"><input id="in-per0b" type="date"></div></div>
+      <div class="field"><label>Période 2 — début → fin</label><div class="daterow"><input id="in-per1a" type="date"><input id="in-per1b" type="date"></div></div>
+      <div class="field"><label>Période 3 — début → fin</label><div class="daterow"><input id="in-per2a" type="date"><input id="in-per2b" type="date"></div></div>
+      <div class="field"><label>Période 4 — début → fin</label><div class="daterow"><input id="in-per3a" type="date"><input id="in-per3b" type="date"></div></div>
     </div>
+    <div class="calnote">Séances comptées d'après le calendrier officiel <b>zone C 2026‑2027</b> (vacances de Toussaint, Noël, hiver, printemps, été) et les jours fériés en semaine : 11 nov., lundi de Pâques (29 mars), Ascension (6 mai) + pont du 7 mai, lundi de Pentecôte (17 mai). Le lundi de Pentecôte est compté chômé — décochez‑le dans le code si votre établissement travaille ce jour.</div>
   </section>
 
   <div class="toolbar">
@@ -200,7 +207,7 @@
 
   <footer class="note">
     Deux colonnes par jour = vos deux titulaires (bleu = Ens. 1, violet = Ens. 2) ; quand les deux ont cours en même temps, les classes sont côte à côte.
-    Chaque créneau est découpé en 4 lignes <b>P1 → P4</b> (les cycles de l'année) : tapez l'activité, cliquez la ligne pour changer le lieu (la couleur).
+    Chaque créneau est découpé en 4 lignes <b>P1 → P4</b> (les cycles de l'année) : tapez l'activité, le <b>nombre de séances</b> (calculé pour la zone C, vacances et fériés déduits) s'affiche à côté, puis cliquez le bouton de droite pour le <b>lieu</b> (la couleur).
     Le bouton <code>co</code> ajoute la co-animation TZR. Glissez une carte sur une autre case pour permuter deux classes. Données enregistrées dans le navigateur ; déposez <code>index.html</code> sur GitHub Pages.
   </footer>
 
@@ -237,6 +244,55 @@ const HOUR_PER_SLOT = 2, HOUR_PER_AS = 1;
 
 function isDisabled(dayKey, slotKey){ return dayKey==='mer' && slotKey==='s3'; } // mercredi aprem = AS
 
+/* ---------- Calendrier officiel zone C 2026-2027 (décompte des séances) ---------- */
+const WEEKDAY = {lun:1, mar:2, mer:3, jeu:4, ven:5};
+// vacances zone C (jours sans cours), bornes incluses (du 1er jour au dernier avant reprise)
+const VACANCES = [
+  ['2026-10-17','2026-11-01'], // Toussaint
+  ['2026-12-19','2027-01-03'], // Noël
+  ['2027-02-06','2027-02-21'], // Hiver (zone C)
+  ['2027-04-03','2027-04-18'], // Printemps (zone C)
+  ['2027-07-03','2027-08-31']  // Été (fin des cours le 02/07/2027)
+];
+// jours fériés / chômés tombant un jour de classe
+const FERIES = [
+  '2026-11-11', // Armistice (mer)
+  '2027-03-29', // Lundi de Pâques
+  '2027-05-06', // Ascension (jeu)
+  '2027-05-07', // pont de l'Ascension (pas classe zone C)
+  '2027-05-17', // Lundi de Pentecôte
+  '2027-05-01','2027-05-08' // 1er & 8 mai (samedis, sans effet)
+];
+const DEFAULT_PERIODS = [
+  {start:'2026-09-01', end:'2026-11-14'},
+  {start:'2026-11-16', end:'2027-01-23'},
+  {start:'2027-01-25', end:'2027-04-02'},
+  {start:'2027-04-19', end:'2027-07-02'}
+];
+let SESS = {}; // {lun:[s1..s4], ...} recalculé à chaque rendu
+function parseD(s){ const p=(s||'').split('-'); return p.length===3 ? new Date(+p[0],+p[1]-1,+p[2]) : null; }
+function isoOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function isOff(d){ const iso=isoOf(d);
+  for(let i=0;i<VACANCES.length;i++){ if(iso>=VACANCES[i][0] && iso<=VACANCES[i][1]) return true; }
+  return FERIES.indexOf(iso)>-1;
+}
+function countSessions(weekday, startStr, endStr){
+  const start=parseD(startStr), end=parseD(endStr);
+  if(!start || !end || end<start) return null;
+  let n=0;
+  for(let dt=new Date(start); dt<=end; dt.setDate(dt.getDate()+1)){
+    if(dt.getDay()===weekday && !isOff(dt)) n++;
+  }
+  return n;
+}
+function computeSessionsMap(){
+  const map={};
+  Object.keys(WEEKDAY).forEach(dk=>{ map[dk]=[];
+    for(let i=0;i<NPER;i++){ const per=state.periods[i]||{}; map[dk].push(countSessions(WEEKDAY[dk], per.start, per.end)); }
+  });
+  return map;
+}
+
 /* ---------- État ---------- */
 let state = defaultState();
 let arm = null;      // {type:'pool',classe} | {type:'card',key}
@@ -246,7 +302,7 @@ function defaultState(){
   return {
     meta:{etab:"Collège — Programmation EPS", annee:"Année scolaire 2026 – 2027"},
     profs:["Prof 1","Prof 2","TZR"],
-    periods:["","","",""],
+    periods:JSON.parse(JSON.stringify(DEFAULT_PERIODS)),
     pool:["6e A","6e B","5e A","5e B","4e A","4e B","3e A","3e B"],
     cells:{},   // "lun-s1-0" -> card | absent
     seq:1
@@ -272,7 +328,12 @@ function load(){
     while(c.p.length<NPER) c.p.push({act:'',fac:'none'});
     if(c.co===undefined) c.co=null;
   });
-  if(!Array.isArray(state.periods)) state.periods=["","","",""];
+  if(!Array.isArray(state.periods)) state.periods=[];
+  for(let i=0;i<NPER;i++){ const p=state.periods[i];
+    if(!p || typeof p!=='object'){ state.periods[i]=Object.assign({},DEFAULT_PERIODS[i]); }
+    else { if(typeof p.start!=='string')p.start=''; if(typeof p.end!=='string')p.end='';
+      if(!p.start && !p.end){ state.periods[i]=Object.assign({},DEFAULT_PERIODS[i]); } }
+  }
 }
 function flashSaved(){ const t=document.getElementById('savetxt'); if(!t)return;
   t.textContent='Enregistré ✓'; clearTimeout(saveTimer); saveTimer=setTimeout(()=>{t.textContent='Sauvegarde automatique';},1200); }
@@ -312,8 +373,9 @@ function render(){
   document.getElementById('h-annee').textContent = state.meta.annee || '';
   setVal('in-etab',state.meta.etab); setVal('in-annee',state.meta.annee);
   setVal('in-p0',state.profs[0]); setVal('in-p1',state.profs[1]); setVal('in-p2',state.profs[2]);
-  for(let i=0;i<NPER;i++) setVal('in-per'+i, state.periods[i]);
+  for(let i=0;i<NPER;i++){ setVal('in-per'+i+'a',state.periods[i].start); setVal('in-per'+i+'b',state.periods[i].end); }
 
+  SESS = computeSessionsMap();
   const conf = computeConflicts();
   renderProfMarks(); renderHours(); renderLegend(); renderPool();
   renderGrid(); renderAS(); renderConflictStatus(conf); renderArmbar();
@@ -392,6 +454,7 @@ function renderAS(){
 }
 
 function renderCard(k,c){
+  const day=k.split('-')[0];
   const co=c.co!=null;
   const coCls = co ? (c._coConf?' on bad':' on') : '';
   const coTitle = co ? (state.profs[2]||'TZR')+' en co-animation — cliquez pour retirer'+(c._coConf?' (TZR déjà sur l\'autre cours !)':'') : 'Ajouter la co-animation TZR';
@@ -399,10 +462,14 @@ function renderCard(k,c){
   for(let i=0;i<NPER;i++){
     const f=FAC[c.p[i].fac]||FAC.none;
     const pconf=c._pconf&&c._pconf[i]?' pconf':'';
-    const range=state.periods[i]?(' — '+state.periods[i]):'';
+    const range=state.periods[i]&&state.periods[i].start?(' — '+state.periods[i].start+' → '+state.periods[i].end):'';
+    const cnt=(SESS[day]&&SESS[day][i]!=null)?SESS[day][i]:null;
+    const cntTxt=cnt==null?'–':(cnt+' séa.');
+    const cntTitle=cnt==null?'Renseignez les dates de cette période':(cnt+' séance'+(cnt>1?'s':'')+' — zone C, vacances et jours fériés déduits');
     rows+=`<div class="prow${pconf}" style="background:${f.bg};color:${f.fg}" title="Lieu : ${f.label} — cliquez pour changer" onclick="cyclePFac('${k}',${i})">
         <span class="plab" title="Période ${i+1}${escHtml(range)}">P${i+1}</span>
         <input class="pact" value="${escHtml(c.p[i].act)}" placeholder="activité" oninput="setAct('${k}',${i},this.value)" onclick="event.stopPropagation()" draggable="false">
+        <span class="pcount" title="${escHtml(cntTitle)}" onclick="event.stopPropagation()">${cntTxt}</span>
         <button class="pfac" title="Lieu : ${f.label} — cliquez pour changer d'installation" onclick="event.stopPropagation();cyclePFac('${k}',${i})">${f.short}</button>
       </div>`;
   }
@@ -479,20 +546,23 @@ function resetEDT(){ if(confirm("Vider toutes les classes posées ?\n(Réserve, 
 /* ---------- Inputs paramètres ---------- */
 function bindInputs(){
   const map=[['in-etab',v=>state.meta.etab=v],['in-annee',v=>state.meta.annee=v],
-    ['in-p0',v=>state.profs[0]=v],['in-p1',v=>state.profs[1]=v],['in-p2',v=>state.profs[2]=v],
-    ['in-per0',v=>state.periods[0]=v],['in-per1',v=>state.periods[1]=v],['in-per2',v=>state.periods[2]=v],['in-per3',v=>state.periods[3]=v]];
+    ['in-p0',v=>state.profs[0]=v],['in-p1',v=>state.profs[1]=v],['in-p2',v=>state.profs[2]=v]];
   map.forEach(([id,fn])=>{ const el=document.getElementById(id); if(!el)return;
     el.addEventListener('input',()=>{ fn(el.value); saveSoon(); });
     el.addEventListener('blur',render);
   });
+  for(let i=0;i<NPER;i++){ bindDate('in-per'+i+'a',i,'start'); bindDate('in-per'+i+'b',i,'end'); }
 }
+function bindDate(id,idx,field){ const el=document.getElementById(id); if(!el)return;
+  el.addEventListener('change',()=>{ state.periods[idx][field]=el.value; save(); render(); }); }
 
 /* ---------- Export EXCEL ---------- */
-function laneActivity(c,p){ if(!c) return ''; const f=FAC[c.p[p].fac];
-  const lieu=(c.p[p].fac&&c.p[p].fac!=='none')?' ('+f.label+')':''; return (c.p[p].act||'')+lieu; }
+function laneActivity(c,p,dayKey){ if(!c) return ''; const f=FAC[c.p[p].fac];
+  const lieu=(c.p[p].fac&&c.p[p].fac!=='none')?' ('+f.label+')':'';
+  const cnt=(SESS[dayKey]&&SESS[dayKey][p]!=null)?(' · '+SESS[dayKey][p]+' séa.'):'';
+  return (c.p[p].act||'')+cnt+lieu; }
 function buildBlock(slotList,isAS){
   const aoa=[];
-  // ligne jours
   const dayRow=['']; DAYS.forEach(d=>{ dayRow.push(d.label,''); });
   aoa.push(dayRow);
   const teachRow=['']; DAYS.forEach(()=>{ teachRow.push(state.profs[0]||'Ens.1', state.profs[1]||'Ens.2'); });
@@ -501,8 +571,8 @@ function buildBlock(slotList,isAS){
     const head=[s.range]; DAYS.forEach(d=>{ for(let l=0;l<2;l++){ const c=getCard(d.key,s.key,l); head.push(c?(c.classe+(c.co!=null?' + '+initials(state.profs[2])+' (co)':'')):(isDisabled(d.key,s.key)?'— AS —':'')); } });
     aoa.push(head);
     for(let p=0;p<NPER;p++){
-      const label='P'+(p+1)+(state.periods[p]?' · '+state.periods[p]:'');
-      const row=[label]; DAYS.forEach(d=>{ for(let l=0;l<2;l++){ const c=getCard(d.key,s.key,l); row.push(laneActivity(c,p)); } });
+      const label='P'+(p+1)+(state.periods[p]&&state.periods[p].start?' · '+state.periods[p].start+'→'+state.periods[p].end:'');
+      const row=[label]; DAYS.forEach(d=>{ for(let l=0;l<2;l++){ row.push(laneActivity(getCard(d.key,s.key,l),p,d.key)); } });
       aoa.push(row);
     }
     aoa.push([]);
@@ -511,6 +581,7 @@ function buildBlock(slotList,isAS){
 }
 function exportXLSX(){
   if(typeof XLSX==='undefined'){ alert("La librairie Excel n'a pas pu se charger (connexion requise au 1er chargement)."); return; }
+  SESS = computeSessionsMap();
   const wb=XLSX.utils.book_new();
   let aoa=[[state.meta.etab],[state.meta.annee],[]].concat(buildBlock(SLOTS,false));
   const ws=XLSX.utils.aoa_to_sheet(aoa);
