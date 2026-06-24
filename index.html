@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Emploi du temps EPS</title>
-<!-- Librairies pour l'export (chargées depuis cdnjs) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -13,24 +12,15 @@
     --ink:#16202b; --ink-soft:#52606d; --muted:#8a96a3;
     --bg:#eef1f4; --surface:#ffffff; --line:#d7dde4; --line-soft:#e7ebef;
     --accent:#1f5fbf; --accent-dark:#16458c;
-    --warn:#c62828; --warn-bg:#fdeceb;
-    --ok:#1b7a3e;
-    /* couleurs installations (imposées par le brief) */
-    --f-gymnase:#1b7a3e; --f-dojo:#7bc47f; --f-plateau:#f08c2e; --f-gym:#f4d03f;
-    --p1:#1f5fbf; --p2:#8e44ad; --p3:#5a6b7b;
-    --radius:9px;
-    --shadow:0 1px 2px rgba(16,32,43,.06),0 2px 8px rgba(16,32,43,.05);
+    --warn:#c62828; --warn-bg:#fdeceb; --ok:#1b7a3e;
+    --radius:9px; --shadow:0 1px 2px rgba(16,32,43,.06),0 2px 8px rgba(16,32,43,.05);
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
-  body{
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:var(--bg); color:var(--ink); line-height:1.4;
-    -webkit-font-smoothing:antialiased;
-  }
-  .wrap{max-width:1280px;margin:0 auto;padding:22px 20px 60px;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.4;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1500px;margin:0 auto;padding:22px 20px 60px;}
 
-  /* En-tête */
   header.app{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:18px;}
   .titles .eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;}
   .titles h1{font-size:26px;margin:2px 0 0;font-weight:800;letter-spacing:-.01em;}
@@ -38,19 +28,17 @@
   .savebadge{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;}
   .savedot{width:8px;height:8px;border-radius:50%;background:var(--ok);}
 
-  /* Panneau paramètres */
   .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);}
-  .params{padding:14px 16px;margin-bottom:14px;}
-  .params .grid-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;}
+  .params{padding:14px 16px;margin-bottom:12px;}
+  .params .grid-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;}
   .field label{display:block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px;}
   .field input{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;font-size:14px;color:var(--ink);background:#fbfcfd;}
   .field input:focus{outline:2px solid var(--accent);outline-offset:0;border-color:var(--accent);}
   .field .hours{font-weight:500;color:var(--accent);text-transform:none;letter-spacing:0;}
-  .pmark{display:inline-block;width:13px;height:13px;border-radius:4px;
-    margin-right:6px;vertical-align:-1px;box-shadow:0 1px 2px rgba(0,0,0,.2);}
+  .pmark{display:inline-block;width:13px;height:13px;border-radius:4px;margin-right:6px;vertical-align:-1px;box-shadow:0 1px 2px rgba(0,0,0,.2);}
+  .ptitle-row{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px;}
 
-  /* Barre d'outils */
-  .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px;}
+  .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px;}
   button.btn{cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);
     padding:9px 13px;border-radius:7px;font-size:13px;font-weight:600;box-shadow:var(--shadow);
     display:inline-flex;align-items:center;gap:7px;transition:.12s;}
@@ -62,17 +50,12 @@
   .conflict-status.ok{color:var(--ok);background:#e8f5ec;}
   .conflict-status.bad{color:var(--warn);background:var(--warn-bg);}
 
-  /* Légende installations */
-  .legend{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 16px;margin-bottom:14px;}
+  .legend{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 16px;margin-bottom:12px;}
   .legend .ltitle{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-right:4px;}
-  .swatch{display:inline-flex;align-items:center;gap:7px;cursor:pointer;border:2px solid transparent;border-radius:20px;
-    padding:4px 11px 4px 5px;font-size:13px;font-weight:600;background:#fff;}
-  .swatch .dot{width:16px;height:16px;border-radius:50%;border:1px solid rgba(0,0,0,.15);}
-  .swatch.active{border-color:var(--ink);box-shadow:0 0 0 2px #fff inset;}
-  .legend .hint{font-size:12px;color:var(--muted);}
+  .swatch{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;}
+  .swatch .dot{width:16px;height:16px;border-radius:4px;border:1px solid rgba(0,0,0,.15);}
 
-  /* Réserve de classes */
-  .pool{padding:12px 16px;margin-bottom:18px;}
+  .pool{padding:12px 16px;margin-bottom:16px;}
   .pool .ptitle{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px;}
   .chips{display:flex;flex-wrap:wrap;gap:7px;align-items:center;}
   .chip{cursor:grab;user-select:none;background:#eef3fb;border:1px solid #cfe0f7;color:var(--accent-dark);
@@ -84,80 +67,69 @@
   .addclass{display:inline-flex;gap:6px;align-items:center;}
   .addclass input{width:90px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;}
 
-  /* Bannière "armé" (mode tap mobile) */
   .armbar{display:none;align-items:center;gap:10px;background:#fff7e6;border:1px solid #f0c869;
-    border-radius:8px;padding:9px 13px;margin-bottom:14px;font-size:13px;}
+    border-radius:8px;padding:9px 13px;margin-bottom:12px;font-size:13px;}
   .armbar.show{display:flex;}
   .armbar b{color:var(--accent-dark);}
 
-  /* Grille emploi du temps */
   .gridcard{padding:0;margin-bottom:18px;overflow:auto;}
-  table.edt{border-collapse:collapse;width:100%;min-width:760px;}
-  table.edt th,table.edt td{border:1px solid var(--line);vertical-align:top;}
-  table.edt thead th{background:#f4f7fa;font-size:13px;padding:9px 6px;text-align:center;color:var(--ink);}
-  table.edt thead th.corner{background:#eef1f4;}
-  table.edt .timecol{width:128px;background:#f7f9fb;text-align:left;padding:10px 11px;}
-  table.edt .timecol .clabel{font-weight:800;font-size:13px;}
-  table.edt .timecol .crange{font-size:11.5px;color:var(--ink-soft);}
-  table.edt .timecol .csub{font-size:10.5px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-top:2px;}
-  td.cell{padding:6px;min-width:118px;height:74px;background:#fff;transition:.1s;}
-  td.cell.dropok{background:#eaf2fe;outline:2px dashed var(--accent);outline-offset:-3px;}
-  td.cell.disabled{background:repeating-linear-gradient(45deg,#f3f5f7,#f3f5f7 7px,#eceff2 7px,#eceff2 14px);}
-  td.cell.disabled .nope{font-size:11px;color:var(--muted);text-align:center;display:block;padding-top:22px;}
-  .pause-row td{background:#f4f7fa;text-align:center;font-size:11.5px;color:var(--ink-soft);
+  table.edt,table.as{border-collapse:collapse;}
+  table.edt{width:100%;min-width:1180px;}
+  table.edt th,table.edt td,table.as th,table.as td{border:1px solid var(--line);}
+  .dayhead{background:#eef2f7;font-size:14px;font-weight:800;padding:8px;text-align:center;}
+  .lanehead{background:#f4f7fa;font-size:12px;font-weight:700;padding:6px 5px;text-align:center;color:var(--ink);max-width:175px;}
+  .corner,.timecol{background:#f7f9fb;}
+  .timecol{width:120px;text-align:left;padding:10px 11px;vertical-align:middle;}
+  .timecol .clabel{font-weight:800;font-size:12.5px;}
+  .timecol .csub{font-size:10.5px;color:var(--muted);letter-spacing:.03em;text-transform:uppercase;margin-top:2px;}
+  td.lane{vertical-align:top;padding:4px;min-width:150px;max-width:175px;background:#fff;transition:.1s;}
+  td.lane.dropok{background:#eaf2fe;outline:2px dashed var(--accent);outline-offset:-3px;}
+  td.lane.disabled{background:repeating-linear-gradient(45deg,#f3f5f7,#f3f5f7 7px,#eceff2 7px,#eceff2 14px);}
+  td.lane.disabled .nope{font-size:10.5px;color:var(--muted);text-align:center;display:block;padding:18px 0;}
+  .pause-row td{background:#f4f7fa;text-align:center;font-size:11px;color:var(--ink-soft);
     padding:5px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;}
 
-  /* Cartes de cours */
-  .card{position:relative;border-radius:7px;padding:6px 7px 6px 8px;margin-bottom:5px;color:#fff;
-    border-left:7px solid rgba(0,0,0,.25);box-shadow:0 1px 2px rgba(0,0,0,.18);cursor:grab;font-size:12.5px;}
-  .card:active{cursor:grabbing;}
-  .card.armed{outline:3px solid var(--accent);outline-offset:1px;}
-  .card.conflict{outline:2px solid var(--warn);outline-offset:0;}
-  .card .top{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;}
-  .card .cls{font-weight:800;font-size:14px;}
-  .card .profs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
-  .card .badge{font-size:10.5px;font-weight:800;color:#fff;border:1px solid rgba(255,255,255,.6);
-    border-radius:5px;padding:1px 6px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.22);letter-spacing:.02em;white-space:nowrap;}
-  .card .badge.co{border-style:dashed;}
-  .card .row2{display:flex;align-items:center;justify-content:space-between;gap:4px;margin-top:4px;}
-  .card .fac{font-size:10.5px;font-weight:600;opacity:.95;cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
-  .card .fac::before{content:"●";font-size:9px;}
-  .card .acts{display:flex;gap:4px;}
-  .card .act{cursor:pointer;font-size:11px;font-weight:800;background:rgba(255,255,255,.85);color:#16202b;
-    border-radius:4px;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;border:none;line-height:1;}
-  .card .act:hover{background:#fff;}
-  .card .act.co{width:auto;padding:0 5px;font-size:10px;}
-  .card .act.co.on{background:#475569;color:#fff;}
-  .card .warn{position:absolute;top:-7px;right:-7px;background:var(--warn);color:#fff;border-radius:50%;
-    width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;}
+  /* carte d'attribution */
+  .assign{border:1px solid var(--line);border-radius:7px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.08);background:#fff;}
+  .assign.armed{outline:3px solid var(--accent);outline-offset:1px;}
+  .ahead{display:flex;align-items:center;justify-content:space-between;gap:4px;background:#11243a;color:#fff;
+    padding:4px 4px 4px 8px;cursor:grab;}
+  .ahead:active{cursor:grabbing;}
+  .ahead .acls{font-weight:800;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ahead .abtns{display:flex;gap:3px;flex:none;}
+  .abtns .act{cursor:pointer;font-size:10px;font-weight:800;background:rgba(255,255,255,.9);color:#16202b;
+    border-radius:4px;min-width:18px;height:18px;padding:0 4px;display:inline-flex;align-items:center;justify-content:center;border:none;line-height:1;}
+  .abtns .act:hover{background:#fff;}
+  .abtns .act.co.on{background:#475569;color:#fff;}
+  .abtns .act.co.bad{background:var(--warn);color:#fff;}
 
-  /* Section AS */
-  .as-wrap{display:grid;grid-template-columns:1fr;gap:0;}
-  .as-head{padding:12px 16px 4px;}
+  .periods{display:flex;flex-direction:column;}
+  .prow{display:flex;align-items:stretch;gap:0;min-height:23px;border-top:1px solid rgba(0,0,0,.06);cursor:pointer;}
+  .prow .plab{flex:none;width:24px;display:flex;align-items:center;justify-content:center;
+    font-size:9.5px;font-weight:800;background:rgba(255,255,255,.32);color:inherit;border-right:1px solid rgba(0,0,0,.08);}
+  .prow .pact{flex:1;min-width:0;border:none;background:transparent;color:inherit;font-size:12px;
+    padding:2px 6px;font-family:inherit;}
+  .prow .pact::placeholder{color:rgba(0,0,0,.32);}
+  .prow .pact:focus{outline:2px solid rgba(255,255,255,.8);outline-offset:-2px;}
+  .prow.pconf{box-shadow:inset 0 0 0 2px var(--warn);}
+
+  .as-head{padding:12px 16px 2px;}
   .as-head h2{font-size:15px;margin:0;font-weight:800;}
   .as-head p{margin:3px 0 0;font-size:12.5px;color:var(--ink-soft);}
-  table.as{border-collapse:collapse;width:100%;max-width:520px;margin:6px 16px 16px;}
-  table.as th,table.as td{border:1px solid var(--line);}
-  table.as th{background:#f4f7fa;font-size:12.5px;padding:8px;}
-  table.as .timecol{width:130px;background:#f7f9fb;font-weight:700;font-size:12.5px;padding:9px 11px;text-align:left;}
-  table.as td.cell{height:64px;}
+  table.as{margin:6px 16px 16px;min-width:520px;}
+  table.as .lanehead{max-width:200px;}
+  table.as td.lane{min-width:175px;}
 
   footer.note{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.6;}
   footer.note code{background:#e7ebef;padding:1px 5px;border-radius:4px;font-size:11.5px;}
 
-  @media (max-width:640px){
-    .titles h1{font-size:21px;}
-    .conflict-status{margin-left:0;}
-  }
-
-  /* Impression / PDF de secours */
   @media print{
     body{background:#fff;}
-    .toolbar,.params,.pool,.legend,.armbar,.savebadge,footer.note,.chip .x,.card .acts,.card .badge{display:none !important;}
+    .toolbar,.params,.pool,.legend,.armbar,.savebadge,footer.note,.chip .x,.abtns{display:none !important;}
     .wrap{max-width:none;padding:0;}
     .gridcard,.panel{box-shadow:none;border:none;}
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-    .card{cursor:default;}
+    .ahead{cursor:default;}
   }
 </style>
 </head>
@@ -166,25 +138,34 @@
 
   <header class="app">
     <div class="titles">
-      <div class="eyebrow">Équipe EPS — Planification</div>
+      <div class="eyebrow">Équipe EPS — Programmation annuelle</div>
       <h1 id="h-etab">Emploi du temps EPS</h1>
       <div class="sub" id="h-annee">Année scolaire</div>
     </div>
     <div class="savebadge"><span class="savedot"></span><span id="savetxt">Sauvegarde automatique</span></div>
   </header>
 
-  <!-- Paramètres -->
   <section class="panel params">
+    <div class="ptitle-row">Établissement &amp; enseignants</div>
     <div class="grid-meta">
       <div class="field"><label>Établissement</label><input id="in-etab" type="text"></div>
       <div class="field"><label>Année scolaire</label><input id="in-annee" type="text"></div>
       <div class="field"><label><span class="pmark" id="pm0"></span>Enseignant 1 <span class="hours" id="h-p0"></span></label><input id="in-p0" type="text"></div>
       <div class="field"><label><span class="pmark" id="pm1"></span>Enseignant 2 <span class="hours" id="h-p1"></span></label><input id="in-p1" type="text"></div>
-      <div class="field"><label><span class="pmark" id="pm2"></span>Enseignant TZR <span class="hours" id="h-p2"></span></label><input id="in-p2" type="text"></div>
+      <div class="field"><label><span class="pmark" id="pm2"></span>Enseignant TZR (co-anim.) <span class="hours" id="h-p2"></span></label><input id="in-p2" type="text"></div>
     </div>
   </section>
 
-  <!-- Outils -->
+  <section class="panel params">
+    <div class="ptitle-row">Périodes de l'année — dates de chaque cycle (P1 → P4)</div>
+    <div class="grid-meta">
+      <div class="field"><label>Période 1</label><input id="in-per0" type="text" placeholder="ex : 01/09 → 14/11"></div>
+      <div class="field"><label>Période 2</label><input id="in-per1" type="text" placeholder="ex : 17/11 → 23/01"></div>
+      <div class="field"><label>Période 3</label><input id="in-per2" type="text" placeholder="ex : 26/01 → 03/04"></div>
+      <div class="field"><label>Période 4</label><input id="in-per3" type="text" placeholder="ex : 07/04 → 03/07"></div>
+    </div>
+  </section>
+
   <div class="toolbar">
     <button class="btn primary" onclick="exportPDF()">⬇︎ Export PDF</button>
     <button class="btn" onclick="exportXLSX()">⬇︎ Export Excel</button>
@@ -192,43 +173,37 @@
     <span id="conflictStatus" class="conflict-status ok">✓ Aucun conflit</span>
   </div>
 
-  <!-- Légende installations -->
   <section class="panel legend" id="legend"></section>
 
-  <!-- Réserve de classes -->
   <section class="panel pool">
-    <div class="ptitle">Réserve de classes — glissez une classe sur un créneau (ou cliquez puis cliquez un créneau)</div>
+    <div class="ptitle">Réserve de classes — glissez une classe dans une colonne (ou cliquez la classe puis une case)</div>
     <div class="chips" id="pool"></div>
   </section>
 
-  <!-- Bannière mode "tap" -->
   <div class="armbar" id="armbar">
     <span id="armtxt"></span>
     <button class="btn ghost" style="margin-left:auto;padding:4px 10px;" onclick="disarm()">Annuler</button>
   </div>
 
-  <!-- Grille principale -->
   <section class="panel gridcard" id="printable">
     <div id="gridMount"></div>
-    <!-- Association sportive -->
-    <div class="as-wrap">
-      <div class="as-head">
-        <h2>Association Sportive — Mercredi</h2>
-        <p>3 créneaux d'1 h, de 12 h 30 à 15 h 30.</p>
-      </div>
-      <div id="asMount"></div>
+    <div class="as-head">
+      <h2>Association Sportive — Mercredi</h2>
+      <p>3 créneaux d'1 h, de 12 h 30 à 15 h 30.</p>
     </div>
+    <div id="asMount"></div>
   </section>
 
   <footer class="note">
-    Données enregistrées dans votre navigateur (localStorage) — rien n'est envoyé en ligne. Pour publier l'outil, déposez ce fichier <code>index.html</code> sur GitHub Pages.<br>
-    Astuce : le badge coloré sur chaque carte (bleu = Ens. 1, violet = Ens. 2) se clique pour basculer l'enseignant titulaire ; le bouton <b>co</b> ajoute ou retire la <b>co-animation TZR</b> (ardoise — le TZR intervient toujours en binôme, jamais seul) ; le libellé d'installation se clique pour changer de lieu. Le bouton ⤴ déplace une carte au doigt sur mobile.
+    Deux colonnes par jour = vos deux titulaires (bleu = Ens. 1, violet = Ens. 2) ; quand les deux ont cours en même temps, les classes sont côte à côte.
+    Chaque créneau est découpé en 4 lignes <b>P1 → P4</b> (les cycles de l'année) : tapez l'activité, cliquez la ligne pour changer le lieu (la couleur).
+    Le bouton <code>co</code> ajoute la co-animation TZR. Glissez une carte sur une autre case pour permuter deux classes. Données enregistrées dans le navigateur ; déposez <code>index.html</code> sur GitHub Pages.
   </footer>
 
 </div>
 
 <script>
-/* ---------- Données de référence ---------- */
+/* ---------- Référentiel ---------- */
 const DAYS = [
   {key:'lun',label:'Lundi'},{key:'mar',label:'Mardi'},{key:'mer',label:'Mercredi'},
   {key:'jeu',label:'Jeudi'},{key:'ven',label:'Vendredi'}
@@ -244,98 +219,84 @@ const AS_SLOTS = [
   {key:'as3',range:'14 h 30 – 15 h 30'}
 ];
 const FAC = {
-  gymnase :{label:'Gymnase',       bg:'#1b7a3e', fg:'#ffffff', cap:1},
-  dojo    :{label:'Dojo',          bg:'#7bc47f', fg:'#143d1f', cap:1},
-  plateau :{label:'½ plateau',     bg:'#f08c2e', fg:'#3a2200', cap:2},
-  gym     :{label:'Gymnastique',   bg:'#f4d03f', fg:'#3d3300', cap:1}
+  none    :{label:'À définir',   bg:'#eef1f4', fg:'#56616c', cap:99},
+  gymnase :{label:'Gymnase',     bg:'#1b7a3e', fg:'#ffffff', cap:1},
+  dojo    :{label:'Dojo',        bg:'#7bc47f', fg:'#143d1f', cap:1},
+  plateau :{label:'½ plateau',   bg:'#f08c2e', fg:'#3a2200', cap:2},
+  gym     :{label:'Gymnastique', bg:'#f4d03f', fg:'#3d3300', cap:1}
 };
-const FAC_ORDER = ['gymnase','dojo','plateau','gym'];
-/* repère visuel par enseignant : couleur propre (sans glyphe) */
-const PROF_STYLE = [
-  {color:'#1f5fbf'},  // Enseignant 1 : bleu
-  {color:'#8e44ad'},  // Enseignant 2 : violet
-  {color:'#475569'}   // TZR : ardoise
-];
-const MAX_PARALLEL = 2;   // 2 cours simultanés maxi par créneau
-const STORAGE_KEY = 'edt_eps_v1';
-const HOUR_PER_SLOT = 2;   // créneau de cours = 2h
-const HOUR_PER_AS   = 1;   // créneau AS = 1h
+const FAC_CYCLE = ['none','gymnase','dojo','plateau','gym'];
+const PROF_STYLE = [{color:'#1f5fbf'},{color:'#8e44ad'},{color:'#475569'}]; // Ens1, Ens2, TZR
+const NPER = 4;
+const STORAGE_KEY = 'edt_eps_v2';
+const HOUR_PER_SLOT = 2, HOUR_PER_AS = 1;
 
-/* mercredi après-midi : pas de cours EPS (réservé à l'AS) */
-function isDisabled(dayKey, slotKey){ return dayKey==='mer' && slotKey==='s3'; }
+function isDisabled(dayKey, slotKey){ return dayKey==='mer' && slotKey==='s3'; } // mercredi aprem = AS
 
 /* ---------- État ---------- */
 let state = defaultState();
-let arm = null; // {type:'pool',classe} | {type:'card',id}
+let arm = null;      // {type:'pool',classe} | {type:'card',key}
+let dragData = null; // idem pour le drag souris
 
 function defaultState(){
   return {
-    meta:{etab:"Collège — Emploi du temps EPS", annee:"Année scolaire 2026 – 2027"},
+    meta:{etab:"Collège — Programmation EPS", annee:"Année scolaire 2026 – 2027"},
     profs:["Prof 1","Prof 2","TZR"],
+    periods:["","","",""],
     pool:["6e A","6e B","5e A","5e B","4e A","4e B","3e A","3e B"],
-    cells:{},        // "lun-s1" -> [ {id,classe,prof,fac} ]
-    activeFac:"gymnase",
+    cells:{},   // "lun-s1-0" -> card | absent
     seq:1
   };
 }
+function makeCard(classe){
+  const p=[]; for(let i=0;i<NPER;i++) p.push({act:'',fac:'none'});
+  return {id:'c'+(state.seq++), classe:classe, co:null, p:p};
+}
 
 /* ---------- Persistance ---------- */
-function save(){
-  try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    flashSaved();
-  }catch(e){ /* mode privé / preview : on continue en mémoire */ }
-}
+let saveTimer=null, saveSoonTimer=null;
+function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); flashSaved(); }catch(e){} }
+function saveSoon(){ clearTimeout(saveSoonTimer); saveSoonTimer=setTimeout(save,400); }
 function load(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){ const s = JSON.parse(raw); if(s && s.meta){ state = Object.assign(defaultState(), s); } }
+  try{ const raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){ const s=JSON.parse(raw); if(s&&s.meta){ state=Object.assign(defaultState(),s); } }
   }catch(e){}
-  // migration : TZR ne peut plus être en solo -> il devient co-animateur
-  Object.keys(state.cells).forEach(k=>state.cells[k].forEach(c=>{
+  // garde-fous structure
+  Object.keys(state.cells).forEach(k=>{ const c=state.cells[k];
+    if(!c){ delete state.cells[k]; return; }
+    if(!Array.isArray(c.p)){ c.p=[]; }
+    while(c.p.length<NPER) c.p.push({act:'',fac:'none'});
     if(c.co===undefined) c.co=null;
-    if(c.prof===2){ c.prof=0; c.co=2; }   // ancien TZR solo -> Ens.1 + co TZR
-  }));
+  });
+  if(!Array.isArray(state.periods)) state.periods=["","","",""];
 }
-let saveTimer=null;
-function flashSaved(){
-  const t=document.getElementById('savetxt');
-  t.textContent='Enregistré ✓';
-  clearTimeout(saveTimer);
-  saveTimer=setTimeout(()=>{t.textContent='Sauvegarde automatique';},1200);
-}
+function flashSaved(){ const t=document.getElementById('savetxt'); if(!t)return;
+  t.textContent='Enregistré ✓'; clearTimeout(saveTimer); saveTimer=setTimeout(()=>{t.textContent='Sauvegarde automatique';},1200); }
 
 /* ---------- Utilitaires ---------- */
-function initials(name){
-  const w = (name||'').trim().split(/\s+/).filter(Boolean);
-  if(w.length===0) return '??';
-  if(w.length===1) return w[0].slice(0,3).toUpperCase();
-  return (w[0][0]+w[1][0]).toUpperCase();
-}
-function cellsOf(key){ if(!state.cells[key]) state.cells[key]=[]; return state.cells[key]; }
-function newId(){ return 'c'+(state.seq++); }
-function teachersOf(c){ return c.co==null ? [c.prof] : [c.prof, c.co]; }
+function initials(name){ const w=(name||'').trim().split(/\s+/).filter(Boolean);
+  if(!w.length) return '??'; if(w.length===1) return w[0].slice(0,3).toUpperCase(); return (w[0][0]+w[1][0]).toUpperCase(); }
+function key(d,s,l){ return d+'-'+s+'-'+l; }
+function getCard(d,s,l){ return state.cells[key(d,s,l)]; }
+function escHtml(s){ return (s+'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+function esc(s){ return (s+'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function allSlots(){ return SLOTS.map(s=>s.key).concat(AS_SLOTS.map(s=>s.key)); }
+function isASkey(k){ return k.indexOf('-as')>-1; }
 
-/* ---------- Conflits ---------- */
-/* Dans une même case : 2 cours maxi, un enseignant ne peut diriger/co-animer 2 cours à la fois,
-   et une installation ne peut servir au-delà de sa capacité (½ plateau = 2). */
+/* ---------- Conflits (par période et par créneau) ---------- */
 function computeConflicts(){
+  Object.keys(state.cells).forEach(k=>{ const c=state.cells[k]; if(c){ c._pconf=[false,false,false,false]; c._coConf=false; } });
   let total=0;
-  Object.keys(state.cells).forEach(key=>{
-    const cards = state.cells[key];
-    const profCount={}, byFac={};
-    cards.forEach(c=>{ c._conf=false; c._reason='';
-      teachersOf(c).forEach(p=>profCount[p]=(profCount[p]||0)+1);
-      byFac[c.fac]=(byFac[c.fac]||0)+1;
-    });
-    const tooMany = cards.length > MAX_PARALLEL;
-    cards.forEach(c=>{
-      const reasons=[];
-      if(tooMany) reasons.push('plus de 2 cours en parallèle');
-      teachersOf(c).forEach(p=>{ if(profCount[p]>1) reasons.push((state.profs[p]||'enseignant')+' déjà occupé(e)'); });
-      const cap = (FAC[c.fac]&&FAC[c.fac].cap)||1;
-      if(byFac[c.fac]>cap) reasons.push((FAC[c.fac]?FAC[c.fac].label:'installation')+' déjà pris(e)');
-      if(reasons.length){ c._conf=true; c._reason=Array.from(new Set(reasons)).join(' · '); total++; }
+  DAYS.forEach(d=>{
+    allSlots().forEach(sk=>{
+      const c0=getCard(d.key,sk,0), c1=getCard(d.key,sk,1);
+      for(let p=0;p<NPER;p++){
+        const used={};
+        [c0,c1].forEach(c=>{ if(c){ const f=c.p[p].fac; if(f&&f!=='none') used[f]=(used[f]||0)+1; } });
+        [c0,c1].forEach(c=>{ if(c){ const f=c.p[p].fac; if(f&&f!=='none'){ const cap=(FAC[f]&&FAC[f].cap)||1;
+          if(used[f]>cap && !c._pconf[p]){ c._pconf[p]=true; total++; } } } });
+      }
+      if(c0&&c1&&c0.co!=null&&c1.co!=null){ c0._coConf=true; c1._coConf=true; total++; }
     });
   });
   return total;
@@ -343,144 +304,114 @@ function computeConflicts(){
 
 /* ---------- Rendu ---------- */
 function render(){
-  // en-têtes
   document.getElementById('h-etab').textContent = state.meta.etab || 'Emploi du temps EPS';
   document.getElementById('h-annee').textContent = state.meta.annee || '';
-  // inputs
   setVal('in-etab',state.meta.etab); setVal('in-annee',state.meta.annee);
   setVal('in-p0',state.profs[0]); setVal('in-p1',state.profs[1]); setVal('in-p2',state.profs[2]);
+  for(let i=0;i<NPER;i++) setVal('in-per'+i, state.periods[i]);
 
   const conf = computeConflicts();
-  renderProfMarks();
-  renderHours();
-  renderLegend();
-  renderPool();
-  renderGrid();
-  renderAS();
-  renderConflictStatus(conf);
-  renderArmbar();
+  renderProfMarks(); renderHours(); renderLegend(); renderPool();
+  renderGrid(); renderAS(); renderConflictStatus(conf); renderArmbar();
 }
 function setVal(id,v){ const el=document.getElementById(id); if(el && document.activeElement!==el) el.value=v||''; }
-
-function renderProfMarks(){
-  for(let i=0;i<3;i++){
-    const el=document.getElementById('pm'+i);
-    if(el){ el.textContent=''; el.style.background=PROF_STYLE[i].color; }
-  }
-}
+function renderProfMarks(){ for(let i=0;i<3;i++){ const el=document.getElementById('pm'+i); if(el){ el.style.background=PROF_STYLE[i].color; } } }
 
 function renderHours(){
   const h=[0,0,0];
-  Object.keys(state.cells).forEach(key=>{
-    const add = key.indexOf('-as')>-1 ? HOUR_PER_AS : HOUR_PER_SLOT;
-    state.cells[key].forEach(c=>{ h[c.prof]+=add; if(c.co!=null) h[c.co]+=add; });
+  Object.keys(state.cells).forEach(k=>{ const c=state.cells[k]; if(!c)return;
+    const parts=k.split('-'); const lane=+parts[2]; const add=isASkey(k)?HOUR_PER_AS:HOUR_PER_SLOT;
+    h[lane]+=add; if(c.co!=null) h[2]+=add;
   });
-  for(let i=0;i<3;i++){
-    const span=document.getElementById('h-p'+i);
-    if(span) span.textContent = h[i] ? '— '+h[i]+' h/sem' : '';
-  }
+  for(let i=0;i<3;i++){ const span=document.getElementById('h-p'+i); if(span) span.textContent = h[i] ? '— '+h[i]+' h/sem':''; }
 }
-
 function renderConflictStatus(n){
   const el=document.getElementById('conflictStatus');
-  if(n>0){ el.className='conflict-status bad'; el.textContent='⚠ '+n+' conflit'+(n>1?'s':'')+' à régler'; }
+  if(n>0){ el.className='conflict-status bad'; el.textContent='⚠ '+n+' conflit'+(n>1?'s':'')+' (même lieu / TZR sur 2 cours)'; }
   else { el.className='conflict-status ok'; el.textContent='✓ Aucun conflit'; }
 }
-
 function renderLegend(){
-  const el=document.getElementById('legend');
-  let html='<span class="ltitle">Installation à poser</span>';
-  FAC_ORDER.forEach(k=>{
-    const f=FAC[k];
-    const active = state.activeFac===k ? ' active':'';
-    html+=`<span class="swatch${active}" onclick="setActiveFac('${k}')" title="Cliquez : nouvelles cartes posées avec cette installation">
-      <span class="dot" style="background:${f.bg}"></span>${f.label}${f.cap>1?' (x'+f.cap+')':''}</span>`;
-  });
-  html+='<span class="hint">L\'installation choisie ici s\'applique aux classes que vous posez ; cliquez le libellé sur une carte pour la changer.</span>';
-  el.innerHTML=html;
+  let html='<span class="ltitle">Lieu = couleur</span>';
+  ['gymnase','dojo','plateau','gym'].forEach(k=>{ const f=FAC[k];
+    html+=`<span class="swatch"><span class="dot" style="background:${f.bg}"></span>${f.label}${f.cap>1?' (×2)':''}</span>`; });
+  html+=`<span class="swatch"><span class="dot" style="background:${FAC.none.bg}"></span>À définir</span>`;
+  document.getElementById('legend').innerHTML=html;
 }
-
 function renderPool(){
-  const el=document.getElementById('pool');
   let html='';
   state.pool.forEach((cl,i)=>{
     const armed = arm && arm.type==='pool' && arm.classe===cl ? ' armed':'';
-    html+=`<span class="chip${armed}" draggable="true"
-      ondragstart="dragPool(event,'${esc(cl)}')"
-      onclick="armPool('${esc(cl)}')">
-      ${escHtml(cl)}<span class="x" onclick="event.stopPropagation();removeClass(${i})" title="Retirer de la réserve">✕</span></span>`;
+    html+=`<span class="chip${armed}" draggable="true" ondragstart="dragPool(event,'${esc(cl)}')" onclick="armPool('${esc(cl)}')">${escHtml(cl)}<span class="x" onclick="event.stopPropagation();removeClass(${i})" title="Retirer">✕</span></span>`;
   });
-  html+=`<span class="addclass">
-      <input id="newclass" type="text" placeholder="ex : 6e C" onkeydown="if(event.key==='Enter')addClass()">
-      <button class="btn" style="padding:6px 11px" onclick="addClass()">+ Ajouter</button></span>`;
-  el.innerHTML=html;
+  html+=`<span class="addclass"><input id="newclass" type="text" placeholder="ex : 6e C" onkeydown="if(event.key==='Enter')addClass()"><button class="btn" style="padding:6px 11px" onclick="addClass()">+ Ajouter</button></span>`;
+  document.getElementById('pool').innerHTML=html;
 }
 
+function laneHead(){
+  return `<th class="lanehead" style="border-bottom:3px solid ${PROF_STYLE[0].color}">${escHtml(state.profs[0]||'Ens. 1')}</th>`
+       + `<th class="lanehead" style="border-bottom:3px solid ${PROF_STYLE[1].color}">${escHtml(state.profs[1]||'Ens. 2')}</th>`;
+}
+function laneCell(d,s,l){
+  const k=key(d,s,l); const c=state.cells[k];
+  return `<td class="lane" data-key="${k}" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="dropCell(event,'${k}')" onclick="cellTap('${k}')">${c?renderCard(k,c):''}</td>`;
+}
 function renderGrid(){
-  let html='<table class="edt"><thead><tr><th class="corner timecol">Horaire</th>';
-  DAYS.forEach(d=>html+=`<th>${d.label}</th>`);
-  html+='</tr></thead><tbody>';
-
+  let h='<table class="edt"><thead><tr><th class="corner timecol" rowspan="2">Horaire</th>';
+  DAYS.forEach(d=>h+=`<th class="dayhead" colspan="2">${d.label}</th>`);
+  h+='</tr><tr>';
+  DAYS.forEach(()=>h+=laneHead());
+  h+='</tr></thead><tbody>';
   SLOTS.forEach((s,si)=>{
-    html+=`<tr><td class="timecol"><div class="clabel">${s.range}</div><div class="csub">${s.sub} · 2 h</div></td>`;
+    h+=`<tr><td class="timecol"><div class="clabel">${s.range}</div><div class="csub">${s.sub} · 2 h</div></td>`;
     DAYS.forEach(d=>{
-      if(isDisabled(d.key,s.key)){
-        html+=`<td class="cell disabled"><span class="nope">Association sportive</span></td>`;
-      }else{
-        const key=d.key+'-'+s.key;
-        html+=`<td class="cell" data-key="${key}" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="dropCell(event,'${key}')" onclick="cellTap('${key}')">${renderCards(key)}</td>`;
-      }
+      [0,1].forEach(l=>{
+        if(isDisabled(d.key,s.key)) h+=`<td class="lane disabled"><span class="nope">Association sportive</span></td>`;
+        else h+=laneCell(d.key,s.key,l);
+      });
     });
-    html+='</tr>';
-    // lignes pauses
-    if(si===0) html+=`<tr class="pause-row"><td>Récréation</td><td colspan="${DAYS.length}">10 h 00 – 10 h 15</td></tr>`;
-    if(si===1) html+=`<tr class="pause-row"><td>Pause méridienne</td><td colspan="${DAYS.length}">12 h 05 – 13 h 40</td></tr>`;
+    h+='</tr>';
+    if(si===0) h+=`<tr class="pause-row"><td>Récréation</td><td colspan="${DAYS.length*2}">10 h 00 – 10 h 15</td></tr>`;
+    if(si===1) h+=`<tr class="pause-row"><td>Pause méridienne</td><td colspan="${DAYS.length*2}">12 h 05 – 13 h 40</td></tr>`;
   });
-  html+='</tbody></table>';
-  document.getElementById('gridMount').innerHTML=html;
+  h+='</tbody></table>';
+  document.getElementById('gridMount').innerHTML=h;
 }
-
 function renderAS(){
-  let html='<table class="as"><thead><tr><th class="timecol">Créneau AS</th><th>Mercredi</th></tr></thead><tbody>';
+  let h='<table class="as"><thead><tr><th class="timecol" rowspan="2">Créneau AS</th><th class="dayhead" colspan="2">Mercredi</th></tr><tr>'+laneHead()+'</tr></thead><tbody>';
   AS_SLOTS.forEach(s=>{
-    const key='mer-'+s.key;
-    html+=`<tr><td class="timecol">${s.range}<div class="csub" style="font-size:10.5px;color:var(--muted)">1 h</div></td>
-      <td class="cell" data-key="${key}" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="dropCell(event,'${key}')" onclick="cellTap('${key}')">${renderCards(key)}</td></tr>`;
+    h+=`<tr><td class="timecol"><div class="clabel">${s.range}</div><div class="csub">1 h</div></td>`;
+    [0,1].forEach(l=>h+=laneCell('mer',s.key,l));
+    h+='</tr>';
   });
-  html+='</tbody></table>';
-  document.getElementById('asMount').innerHTML=html;
+  h+='</tbody></table>';
+  document.getElementById('asMount').innerHTML=h;
 }
 
-function renderCards(key){
-  const cards = state.cells[key]||[];
-  return cards.map(c=>{
-    const f=FAC[c.fac]||FAC.gymnase;
-    const ps=PROF_STYLE[c.prof]||PROF_STYLE[0];
-    const armed = arm && arm.type==='card' && arm.id===c.id ? ' armed':'';
-    const conf = c._conf ? ' conflict':'';
-    const co = c.co!=null;
-    const coStyle = PROF_STYLE[c.co!=null?c.co:2];
-    const coBadge = co
-      ? `<span class="badge co" style="background:${coStyle.color}" title="${escHtml(state.profs[c.co]||'TZR')} en co-animation — cliquez pour retirer" onclick="event.stopPropagation();toggleCo('${key}','${c.id}')">${initials(state.profs[c.co])}</span>`
-      : '';
-    return `<div class="card${armed}${conf}" draggable="true" style="background:${f.bg};color:${f.fg};border-left-color:${ps.color}"
-        ondragstart="dragCard(event,'${c.id}')" onclick="event.stopPropagation()">
-      ${c._conf?`<span class="warn" title="${escHtml(c._reason||'conflit')}">!</span>`:''}
-      <div class="top"><span class="cls">${escHtml(c.classe)}</span></div>
-      <div class="profs">
-        <span class="badge" style="background:${ps.color}" title="${escHtml(state.profs[c.prof]||'')} — cliquez pour basculer Enseignant 1 / 2" onclick="event.stopPropagation();cycleProf('${key}','${c.id}')">${initials(state.profs[c.prof])}</span>
-        ${coBadge}
-      </div>
-      <div class="row2">
-        <span class="fac" title="Cliquez pour changer d'installation" onclick="event.stopPropagation();cycleFac('${key}','${c.id}')">${f.label}</span>
-        <span class="acts">
-          <button class="act co${co?' on':''}" title="Co-animation TZR (activer / désactiver)" onclick="event.stopPropagation();toggleCo('${key}','${c.id}')">co</button>
-          <button class="act" title="Déplacer (tactile)" onclick="event.stopPropagation();armCard('${c.id}')">⤴</button>
-          <button class="act" title="Supprimer" onclick="event.stopPropagation();delCard('${key}','${c.id}')">✕</button>
-        </span>
-      </div>
-    </div>`;
-  }).join('');
+function renderCard(k,c){
+  const co=c.co!=null;
+  const coCls = co ? (c._coConf?' on bad':' on') : '';
+  const coTitle = co ? (state.profs[2]||'TZR')+' en co-animation — cliquez pour retirer'+(c._coConf?' (TZR déjà sur l\'autre cours !)':'') : 'Ajouter la co-animation TZR';
+  let rows='';
+  for(let i=0;i<NPER;i++){
+    const f=FAC[c.p[i].fac]||FAC.none;
+    const pconf=c._pconf&&c._pconf[i]?' pconf':'';
+    const range=state.periods[i]?(' — '+state.periods[i]):'';
+    rows+=`<div class="prow${pconf}" style="background:${f.bg};color:${f.fg}" title="Lieu : ${f.label} — cliquez pour changer" onclick="cyclePFac('${k}',${i})">
+        <span class="plab" title="Période ${i+1}${escHtml(range)}">P${i+1}</span>
+        <input class="pact" value="${escHtml(c.p[i].act)}" placeholder="activité" oninput="setAct('${k}',${i},this.value)" onclick="event.stopPropagation()" draggable="false">
+      </div>`;
+  }
+  return `<div class="assign">
+    <div class="ahead" draggable="true" ondragstart="dragCard(event,'${k}')">
+      <span class="acls" title="${escHtml(c.classe)}">${escHtml(c.classe)}${co?'  + '+escHtml(initials(state.profs[2])):''}</span>
+      <span class="abtns">
+        <button class="act co${coCls}" title="${escHtml(coTitle)}" onclick="event.stopPropagation();toggleCo('${k}')">co</button>
+        <button class="act" title="Déplacer (tactile)" onclick="event.stopPropagation();armCard('${k}')">⤴</button>
+        <button class="act" title="Supprimer" onclick="event.stopPropagation();delCard('${k}')">✕</button>
+      </span>
+    </div>
+    <div class="periods">${rows}</div>
+  </div>`;
 }
 
 function renderArmbar(){
@@ -488,129 +419,106 @@ function renderArmbar(){
   if(!arm){ bar.classList.remove('show'); return; }
   bar.classList.add('show');
   let label='';
-  if(arm.type==='pool') label=`Classe <b>${escHtml(arm.classe)}</b> sélectionnée — cliquez un créneau pour la poser.`;
-  else {
-    const c=findCard(arm.id);
-    label=`Carte <b>${escHtml(c?c.classe:'')}</b> en déplacement — cliquez le créneau de destination.`;
-  }
+  if(arm.type==='pool') label=`Classe <b>${escHtml(arm.classe)}</b> sélectionnée — cliquez une colonne pour la poser.`;
+  else { const c=state.cells[arm.key]; label=`Carte <b>${escHtml(c?c.classe:'')}</b> en déplacement — cliquez la case de destination (échange si occupée).`; }
   document.getElementById('armtxt').innerHTML=label;
 }
 
-/* ---------- Échappement ---------- */
-function escHtml(s){ return (s+'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
-function esc(s){ return (s+'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
-
-/* ---------- Actions : réserve ---------- */
-function addClass(){
-  const inp=document.getElementById('newclass'); if(!inp) return;
-  const raw=inp.value.trim(); if(!raw) return;
+/* ---------- Réserve ---------- */
+function addClass(){ const inp=document.getElementById('newclass'); if(!inp)return; const raw=inp.value.trim(); if(!raw)return;
   raw.split(',').map(x=>x.trim()).filter(Boolean).forEach(x=>{ if(!state.pool.includes(x)) state.pool.push(x); });
-  inp.value=''; save(); render(); document.getElementById('newclass').focus();
-}
+  inp.value=''; save(); render(); document.getElementById('newclass').focus(); }
 function removeClass(i){ state.pool.splice(i,1); save(); render(); }
 
 /* ---------- Drag & drop (souris) ---------- */
-let dragData=null;
 function dragPool(e,cl){ dragData={type:'pool',classe:cl}; e.dataTransfer.effectAllowed='copy'; }
-function dragCard(e,id){ dragData={type:'card',id:id}; e.dataTransfer.effectAllowed='move'; }
+function dragCard(e,k){ dragData={type:'card',key:k}; e.dataTransfer.effectAllowed='move'; }
 function allowDrop(e){ e.preventDefault(); e.currentTarget.classList.add('dropok'); }
 function leaveDrop(e){ e.currentTarget.classList.remove('dropok'); }
-function dropCell(e,key){
+function dropCell(e,destKey){
   e.preventDefault(); e.currentTarget.classList.remove('dropok');
   if(!dragData) return;
-  if(dragData.type==='pool') placeNew(key,dragData.classe);
-  else moveCard(dragData.id,key);
+  if(dragData.type==='pool') placeNew(destKey,dragData.classe);
+  else moveOrSwap(dragData.key,destKey);
   dragData=null; save(); render();
 }
 
-/* ---------- Mode tap (mobile) ---------- */
-function armPool(cl){ arm = (arm && arm.type==='pool' && arm.classe===cl)? null : {type:'pool',classe:cl}; render(); }
-function armCard(id){ arm = (arm && arm.type==='card' && arm.id===id)? null : {type:'card',id:id}; render(); }
+/* ---------- Mode tactile ---------- */
+function armPool(cl){ arm=(arm&&arm.type==='pool'&&arm.classe===cl)?null:{type:'pool',classe:cl}; render(); }
+function armCard(k){ arm=(arm&&arm.type==='card'&&arm.key===k)?null:{type:'card',key:k}; render(); }
 function disarm(){ arm=null; render(); }
-function cellTap(key){
+function cellTap(destKey){
   if(!arm) return;
-  if(arm.type==='pool') placeNew(key,arm.classe);
-  else moveCard(arm.id,key);
+  if(arm.type==='pool') placeNew(destKey,arm.classe);
+  else moveOrSwap(arm.key,destKey);
   arm=null; save(); render();
 }
 
-/* ---------- Manipulation des cartes ---------- */
-function placeNew(key,classe){
-  cellsOf(key).push({id:newId(),classe:classe,prof:0,co:null,fac:state.activeFac});
+/* ---------- Manipulation ---------- */
+function placeNew(destKey,classe){ if(state.cells[destKey]) return; state.cells[destKey]=makeCard(classe); }
+function moveOrSwap(srcKey,destKey){
+  if(srcKey===destKey) return;
+  const src=state.cells[srcKey], dst=state.cells[destKey];
+  state.cells[destKey]=src;
+  if(dst) state.cells[srcKey]=dst; else delete state.cells[srcKey];
 }
-function findCard(id){
-  for(const k in state.cells){ const c=state.cells[k].find(x=>x.id===id); if(c) return c; }
-  return null;
-}
-function moveCard(id,destKey){
-  let card=null;
-  for(const k in state.cells){
-    const idx=state.cells[k].findIndex(x=>x.id===id);
-    if(idx>-1){ card=state.cells[k].splice(idx,1)[0]; break; }
-  }
-  if(card) cellsOf(destKey).push(card);
-}
-function delCard(key,id){ const arr=state.cells[key]; if(!arr) return; const i=arr.findIndex(x=>x.id===id); if(i>-1)arr.splice(i,1); save(); render(); }
-function cycleProf(key,id){ const c=(state.cells[key]||[]).find(x=>x.id===id); if(!c)return; c.prof = c.prof===0?1:0; save(); render(); }
-function toggleCo(key,id){ const c=(state.cells[key]||[]).find(x=>x.id===id); if(!c)return; c.co = (c.co==null)?2:null; save(); render(); }
-function cycleFac(key,id){ const c=(state.cells[key]||[]).find(x=>x.id===id); if(!c)return; const i=FAC_ORDER.indexOf(c.fac); c.fac=FAC_ORDER[(i+1)%FAC_ORDER.length]; save(); render(); }
-function setActiveFac(k){ state.activeFac=k; save(); render(); }
+function delCard(k){ delete state.cells[k]; save(); render(); }
+function toggleCo(k){ const c=state.cells[k]; if(!c)return; c.co=(c.co==null)?2:null; save(); render(); }
+function cyclePFac(k,i){ const c=state.cells[k]; if(!c)return; const cur=FAC_CYCLE.indexOf(c.p[i].fac);
+  c.p[i].fac=FAC_CYCLE[(cur+1)%FAC_CYCLE.length]; save(); render(); }
+function setAct(k,i,val){ const c=state.cells[k]; if(!c)return; c.p[i].act=val; saveSoon(); }
 
 /* ---------- Réinitialisation ---------- */
-function resetEDT(){
-  if(confirm("Vider toutes les classes posées sur l'emploi du temps ?\n(La réserve, les enseignants et les réglages sont conservés.)")){
-    state.cells={}; arm=null; save(); render();
-  }
-}
+function resetEDT(){ if(confirm("Vider toutes les classes posées ?\n(Réserve, enseignants, périodes et réglages conservés.)")){ state.cells={}; arm=null; save(); render(); } }
 
 /* ---------- Inputs paramètres ---------- */
 function bindInputs(){
   const map=[['in-etab',v=>state.meta.etab=v],['in-annee',v=>state.meta.annee=v],
-    ['in-p0',v=>state.profs[0]=v],['in-p1',v=>state.profs[1]=v],['in-p2',v=>state.profs[2]=v]];
-  map.forEach(([id,fn])=>{
-    const el=document.getElementById(id);
-    el.addEventListener('input',()=>{ fn(el.value); save(); });
+    ['in-p0',v=>state.profs[0]=v],['in-p1',v=>state.profs[1]=v],['in-p2',v=>state.profs[2]=v],
+    ['in-per0',v=>state.periods[0]=v],['in-per1',v=>state.periods[1]=v],['in-per2',v=>state.periods[2]=v],['in-per3',v=>state.periods[3]=v]];
+  map.forEach(([id,fn])=>{ const el=document.getElementById(id); if(!el)return;
+    el.addEventListener('input',()=>{ fn(el.value); saveSoon(); });
     el.addEventListener('blur',render);
   });
 }
 
 /* ---------- Export EXCEL ---------- */
-function cellText(key){
-  return (state.cells[key]||[]).map(c=>{
-    const f=FAC[c.fac]?FAC[c.fac].label:'';
-    const t = c.co==null ? initials(state.profs[c.prof])
-                         : initials(state.profs[c.prof])+' + '+initials(state.profs[c.co])+' (co)';
-    return `${c.classe} (${t}) – ${f}`;
-  }).join('  •  ');
+function laneActivity(c,p){ if(!c) return ''; const f=FAC[c.p[p].fac];
+  const lieu=(c.p[p].fac&&c.p[p].fac!=='none')?' ('+f.label+')':''; return (c.p[p].act||'')+lieu; }
+function buildBlock(slotList,isAS){
+  const aoa=[];
+  // ligne jours
+  const dayRow=['']; DAYS.forEach(d=>{ dayRow.push(d.label,''); });
+  aoa.push(dayRow);
+  const teachRow=['']; DAYS.forEach(()=>{ teachRow.push(state.profs[0]||'Ens.1', state.profs[1]||'Ens.2'); });
+  aoa.push(teachRow);
+  slotList.forEach(s=>{
+    const head=[s.range]; DAYS.forEach(d=>{ for(let l=0;l<2;l++){ const c=getCard(d.key,s.key,l); head.push(c?(c.classe+(c.co!=null?' + '+initials(state.profs[2])+' (co)':'')):(isDisabled(d.key,s.key)?'— AS —':'')); } });
+    aoa.push(head);
+    for(let p=0;p<NPER;p++){
+      const label='P'+(p+1)+(state.periods[p]?' · '+state.periods[p]:'');
+      const row=[label]; DAYS.forEach(d=>{ for(let l=0;l<2;l++){ const c=getCard(d.key,s.key,l); row.push(laneActivity(c,p)); } });
+      aoa.push(row);
+    }
+    aoa.push([]);
+  });
+  return aoa;
 }
 function exportXLSX(){
-  if(typeof XLSX==='undefined'){ alert("La librairie Excel n'a pas pu se charger (connexion requise au premier chargement)."); return; }
+  if(typeof XLSX==='undefined'){ alert("La librairie Excel n'a pas pu se charger (connexion requise au 1er chargement)."); return; }
   const wb=XLSX.utils.book_new();
-  // Feuille 1 : cours
-  const aoa=[];
-  aoa.push([state.meta.etab]);
-  aoa.push([state.meta.annee]);
-  aoa.push([]);
-  aoa.push(['Horaire', ...DAYS.map(d=>d.label)]);
-  SLOTS.forEach(s=>{
-    const row=[`${s.range} (${s.sub})`];
-    DAYS.forEach(d=>{ row.push(isDisabled(d.key,s.key)?'— AS —':cellText(d.key+'-'+s.key)); });
-    aoa.push(row);
-  });
+  let aoa=[[state.meta.etab],[state.meta.annee],[]].concat(buildBlock(SLOTS,false));
   const ws=XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols']=[{wch:24},{wch:26},{wch:26},{wch:26},{wch:26},{wch:26}];
+  ws['!cols']=[{wch:20}].concat(Array(DAYS.length*2).fill({wch:20}));
   XLSX.utils.book_append_sheet(wb,ws,'Emploi du temps');
-  // Feuille 2 : AS
-  const a2=[['Association Sportive — Mercredi'],[state.meta.annee],[],['Créneau','Mercredi']];
-  AS_SLOTS.forEach(s=>a2.push([s.range, cellText('mer-'+s.key)]));
-  const ws2=XLSX.utils.aoa_to_sheet(a2);
-  ws2['!cols']=[{wch:20},{wch:40}];
+
+  let a2=[['Association Sportive — Mercredi'],[state.meta.annee],[]].concat(buildBlock(AS_SLOTS,true));
+  const ws2=XLSX.utils.aoa_to_sheet(a2); ws2['!cols']=[{wch:20}].concat(Array(DAYS.length*2).fill({wch:20}));
   XLSX.utils.book_append_sheet(wb,ws2,'AS Mercredi');
-  // Feuille 3 : récap enseignants
+
   const h=[0,0,0];
-  Object.keys(state.cells).forEach(key=>{const add=key.indexOf('-as')>-1?1:2;state.cells[key].forEach(c=>{h[c.prof]+=add;if(c.co!=null)h[c.co]+=add;});});
-  const a3=[['Enseignant','Heures EPS / semaine']];
-  state.profs.forEach((p,i)=>a3.push([p,h[i]]));
+  Object.keys(state.cells).forEach(k=>{ const c=state.cells[k]; if(!c)return; const lane=+k.split('-')[2]; const add=isASkey(k)?1:2; h[lane]+=add; if(c.co!=null)h[2]+=add; });
+  const a3=[['Enseignant','Heures EPS / semaine']]; state.profs.forEach((p,i)=>a3.push([p,h[i]]));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a3),'Récap enseignants');
 
   const safe=(state.meta.annee||'EPS').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_');
@@ -621,31 +529,23 @@ function exportXLSX(){
 function exportPDF(){
   const node=document.getElementById('printable');
   if(typeof html2canvas==='undefined' || !window.jspdf){ window.print(); return; }
-  const jsPDF = window.jspdf.jsPDF;
+  const jsPDF=window.jspdf.jsPDF;
   html2canvas(node,{scale:2,backgroundColor:'#ffffff',useCORS:true}).then(canvas=>{
     const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-    const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight();
-    const margin=8;
-    // titre
-    pdf.setFontSize(13); pdf.setTextColor(20,30,40);
-    pdf.text(state.meta.etab||'Emploi du temps EPS', margin, 9);
-    pdf.setFontSize(9); pdf.setTextColor(90,100,110);
-    pdf.text(state.meta.annee||'', margin, 14);
-    const top=18;
-    const availW=pw-margin*2, availH=ph-top-margin;
+    const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight(), m=8;
+    pdf.setFontSize(13); pdf.setTextColor(20,30,40); pdf.text(state.meta.etab||'Emploi du temps EPS', m, 9);
+    pdf.setFontSize(9); pdf.setTextColor(90,100,110); pdf.text(state.meta.annee||'', m, 14);
+    const top=18, availW=pw-m*2, availH=ph-top-m;
     let w=availW, h=canvas.height*(w/canvas.width);
     if(h>availH){ h=availH; w=canvas.width*(h/canvas.height); }
-    const x=margin+(availW-w)/2;
-    pdf.addImage(canvas.toDataURL('image/png'),'PNG',x,top,w,h);
+    pdf.addImage(canvas.toDataURL('image/png'),'PNG', m+(availW-w)/2, top, w, h);
     const safe=(state.meta.annee||'EPS').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_');
     pdf.save(`EDT_EPS_${safe||'annee'}.pdf`);
-  }).catch(()=>{ window.print(); });
+  }).catch(()=>window.print());
 }
 
 /* ---------- Init ---------- */
-load();
-bindInputs();
-render();
+load(); bindInputs(); render();
 </script>
 </body>
 </html>
