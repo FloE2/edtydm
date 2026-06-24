@@ -46,6 +46,8 @@
   .field input{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;font-size:14px;color:var(--ink);background:#fbfcfd;}
   .field input:focus{outline:2px solid var(--accent);outline-offset:0;border-color:var(--accent);}
   .field .hours{font-weight:500;color:var(--accent);text-transform:none;letter-spacing:0;}
+  .pmark{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;
+    color:#fff;font-size:11px;font-weight:800;margin-right:6px;vertical-align:-3px;box-shadow:0 1px 2px rgba(0,0,0,.2);}
 
   /* Barre d'outils */
   .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px;}
@@ -106,15 +108,15 @@
     padding:5px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;}
 
   /* Cartes de cours */
-  .card{position:relative;border-radius:7px;padding:6px 7px 6px 9px;margin-bottom:5px;color:#fff;
-    border-left:5px solid rgba(0,0,0,.25);box-shadow:0 1px 2px rgba(0,0,0,.18);cursor:grab;font-size:12.5px;}
+  .card{position:relative;border-radius:7px;padding:6px 7px 6px 8px;margin-bottom:5px;color:#fff;
+    border-left:7px solid rgba(0,0,0,.25);box-shadow:0 1px 2px rgba(0,0,0,.18);cursor:grab;font-size:12.5px;}
   .card:active{cursor:grabbing;}
   .card.armed{outline:3px solid var(--accent);outline-offset:1px;}
   .card.conflict{outline:2px solid var(--warn);outline-offset:0;}
   .card .top{display:flex;align-items:center;justify-content:space-between;gap:6px;}
   .card .cls{font-weight:800;font-size:14px;}
-  .card .badge{font-size:10px;font-weight:800;background:rgba(255,255,255,.92);color:#16202b;
-    border-radius:4px;padding:1px 5px;cursor:pointer;border:1px solid rgba(0,0,0,.12);}
+  .card .badge{font-size:10.5px;font-weight:800;color:#fff;border:1px solid rgba(255,255,255,.6);
+    border-radius:5px;padding:1px 6px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.22);letter-spacing:.02em;white-space:nowrap;}
   .card .row2{display:flex;align-items:center;justify-content:space-between;gap:4px;margin-top:4px;}
   .card .fac{font-size:10.5px;font-weight:600;opacity:.95;cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
   .card .fac::before{content:"●";font-size:9px;}
@@ -172,9 +174,9 @@
     <div class="grid-meta">
       <div class="field"><label>Établissement</label><input id="in-etab" type="text"></div>
       <div class="field"><label>Année scolaire</label><input id="in-annee" type="text"></div>
-      <div class="field"><label>Enseignant 1 <span class="hours" id="h-p0"></span></label><input id="in-p0" type="text"></div>
-      <div class="field"><label>Enseignant 2 <span class="hours" id="h-p1"></span></label><input id="in-p1" type="text"></div>
-      <div class="field"><label>Enseignant TZR <span class="hours" id="h-p2"></span></label><input id="in-p2" type="text"></div>
+      <div class="field"><label><span class="pmark" id="pm0"></span>Enseignant 1 <span class="hours" id="h-p0"></span></label><input id="in-p0" type="text"></div>
+      <div class="field"><label><span class="pmark" id="pm1"></span>Enseignant 2 <span class="hours" id="h-p1"></span></label><input id="in-p1" type="text"></div>
+      <div class="field"><label><span class="pmark" id="pm2"></span>Enseignant TZR <span class="hours" id="h-p2"></span></label><input id="in-p2" type="text"></div>
     </div>
   </section>
 
@@ -244,7 +246,13 @@ const FAC = {
   gym     :{label:'Gymnastique',   bg:'#f4d03f', fg:'#3d3300', cap:1}
 };
 const FAC_ORDER = ['gymnase','dojo','plateau','gym'];
-const PROF_COLOR = ['var(--p1)','var(--p2)','var(--p3)'];
+/* repère visuel par enseignant : couleur + forme (lisible en N&B / daltonisme) */
+const PROF_STYLE = [
+  {color:'#1f5fbf', shape:'\u25CF'},  // Enseignant 1 : rond bleu
+  {color:'#8e44ad', shape:'\u25B2'},  // Enseignant 2 : triangle violet
+  {color:'#475569', shape:'\u25C6'}   // TZR : losange ardoise
+];
+const MAX_PARALLEL = 2;   // 2 cours simultanés maxi par créneau
 const STORAGE_KEY = 'edt_eps_v1';
 const HOUR_PER_SLOT = 2;   // créneau de cours = 2h
 const HOUR_PER_AS   = 1;   // créneau AS = 1h
@@ -305,12 +313,14 @@ function computeConflicts(){
   Object.keys(state.cells).forEach(key=>{
     const cards = state.cells[key];
     const byProf={}, byFac={};
-    cards.forEach(c=>{ c._conf=false; byProf[c.prof]=(byProf[c.prof]||0)+1; byFac[c.fac]=(byFac[c.fac]||0)+1; });
+    cards.forEach(c=>{ c._conf=false; c._reason=''; byProf[c.prof]=(byProf[c.prof]||0)+1; byFac[c.fac]=(byFac[c.fac]||0)+1; });
+    const tooMany = cards.length > MAX_PARALLEL;
     cards.forEach(c=>{
       const reasons=[];
+      if(tooMany) reasons.push('plus de 2 cours en parallèle');
       if(byProf[c.prof]>1) reasons.push('enseignant déjà occupé');
       const cap = (FAC[c.fac]&&FAC[c.fac].cap)||1;
-      if(byFac[c.fac]>cap) reasons.push((FAC[c.fac]?FAC[c.fac].label:'installation')+' déjà prise');
+      if(byFac[c.fac]>cap) reasons.push((FAC[c.fac]?FAC[c.fac].label:'installation')+' déjà pris(e)');
       if(reasons.length){ c._conf=true; c._reason=reasons.join(' · '); total++; }
     });
   });
@@ -327,6 +337,7 @@ function render(){
   setVal('in-p0',state.profs[0]); setVal('in-p1',state.profs[1]); setVal('in-p2',state.profs[2]);
 
   const conf = computeConflicts();
+  renderProfMarks();
   renderHours();
   renderLegend();
   renderPool();
@@ -336,6 +347,13 @@ function render(){
   renderArmbar();
 }
 function setVal(id,v){ const el=document.getElementById(id); if(el && document.activeElement!==el) el.value=v||''; }
+
+function renderProfMarks(){
+  for(let i=0;i<3;i++){
+    const el=document.getElementById('pm'+i);
+    if(el){ el.textContent=PROF_STYLE[i].shape; el.style.background=PROF_STYLE[i].color; }
+  }
+}
 
 function renderHours(){
   const h=[0,0,0];
@@ -423,15 +441,15 @@ function renderCards(key){
   const cards = state.cells[key]||[];
   return cards.map(c=>{
     const f=FAC[c.fac]||FAC.gymnase;
+    const ps=PROF_STYLE[c.prof]||PROF_STYLE[2];
     const armed = arm && arm.type==='card' && arm.id===c.id ? ' armed':'';
     const conf = c._conf ? ' conflict':'';
-    const pcol = PROF_COLOR[c.prof]||PROF_COLOR[2];
-    return `<div class="card${armed}${conf}" draggable="true" style="background:${f.bg};color:${f.fg};border-left-color:${pcol}"
+    return `<div class="card${armed}${conf}" draggable="true" style="background:${f.bg};color:${f.fg};border-left-color:${ps.color}"
         ondragstart="dragCard(event,'${c.id}')" onclick="event.stopPropagation()">
       ${c._conf?`<span class="warn" title="${escHtml(c._reason||'conflit')}">!</span>`:''}
       <div class="top">
         <span class="cls">${escHtml(c.classe)}</span>
-        <span class="badge" title="${escHtml(state.profs[c.prof]||'')} — cliquez pour changer" onclick="event.stopPropagation();cycleProf('${key}','${c.id}')">${initials(state.profs[c.prof])}</span>
+        <span class="badge" style="background:${ps.color}" title="${escHtml(state.profs[c.prof]||'')} — cliquez pour changer d'enseignant" onclick="event.stopPropagation();cycleProf('${key}','${c.id}')">${ps.shape} ${initials(state.profs[c.prof])}</span>
       </div>
       <div class="row2">
         <span class="fac" title="Cliquez pour changer d'installation" onclick="event.stopPropagation();cycleFac('${key}','${c.id}')">${f.label}</span>
