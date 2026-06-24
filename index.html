@@ -111,6 +111,10 @@
     padding:2px 6px;font-family:inherit;}
   .prow .pact::placeholder{color:rgba(0,0,0,.32);}
   .prow .pact:focus{outline:2px solid rgba(255,255,255,.8);outline-offset:-2px;}
+  .prow .pfac{flex:none;align-self:center;margin:2px 3px;border:none;cursor:pointer;
+    background:rgba(255,255,255,.92);color:#16202b;font-size:9.5px;font-weight:800;
+    padding:2px 6px;border-radius:5px;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.18);letter-spacing:.01em;}
+  .prow .pfac:hover{background:#fff;}
   .prow.pconf{box-shadow:inset 0 0 0 2px var(--warn);}
 
   .as-head{padding:12px 16px 2px;}
@@ -219,11 +223,11 @@ const AS_SLOTS = [
   {key:'as3',range:'14 h 30 – 15 h 30'}
 ];
 const FAC = {
-  none    :{label:'À définir',   bg:'#eef1f4', fg:'#56616c', cap:99},
-  gymnase :{label:'Gymnase',     bg:'#1b7a3e', fg:'#ffffff', cap:1},
-  dojo    :{label:'Dojo',        bg:'#7bc47f', fg:'#143d1f', cap:1},
-  plateau :{label:'½ plateau',   bg:'#f08c2e', fg:'#3a2200', cap:2},
-  gym     :{label:'Gymnastique', bg:'#f4d03f', fg:'#3d3300', cap:1}
+  none    :{label:'À définir',   short:'Lieu ?',  bg:'#eef1f4', fg:'#56616c', cap:99},
+  gymnase :{label:'Gymnase',     short:'Gymnase', bg:'#1b7a3e', fg:'#ffffff', cap:1},
+  dojo    :{label:'Dojo',        short:'Dojo',    bg:'#7bc47f', fg:'#143d1f', cap:1},
+  plateau :{label:'½ plateau',   short:'½ plat.', bg:'#f08c2e', fg:'#3a2200', cap:2},
+  gym     :{label:'Gymnastique', short:'Gymn.',   bg:'#f4d03f', fg:'#3d3300', cap:1}
 };
 const FAC_CYCLE = ['none','gymnase','dojo','plateau','gym'];
 const PROF_STYLE = [{color:'#1f5fbf'},{color:'#8e44ad'},{color:'#475569'}]; // Ens1, Ens2, TZR
@@ -399,6 +403,7 @@ function renderCard(k,c){
     rows+=`<div class="prow${pconf}" style="background:${f.bg};color:${f.fg}" title="Lieu : ${f.label} — cliquez pour changer" onclick="cyclePFac('${k}',${i})">
         <span class="plab" title="Période ${i+1}${escHtml(range)}">P${i+1}</span>
         <input class="pact" value="${escHtml(c.p[i].act)}" placeholder="activité" oninput="setAct('${k}',${i},this.value)" onclick="event.stopPropagation()" draggable="false">
+        <button class="pfac" title="Lieu : ${f.label} — cliquez pour changer d'installation" onclick="event.stopPropagation();cyclePFac('${k}',${i})">${f.short}</button>
       </div>`;
   }
   return `<div class="assign">
