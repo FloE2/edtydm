@@ -133,6 +133,11 @@
   .abtns .act:hover{background:rgba(0,0,0,.14);}
   .abtns .act.co.on{background:#475569;color:#fff;border-color:#475569;}
   .abtns .act.co.bad{background:var(--warn);color:#fff;border-color:var(--warn);}
+  .abtns .sembtn{cursor:pointer;font-size:9px;font-weight:800;background:rgba(0,0,0,.07);color:inherit;
+    border:1px solid rgba(0,0,0,.16);border-radius:4px;height:18px;padding:0 5px;line-height:1;white-space:nowrap;letter-spacing:.01em;}
+  .abtns .sembtn:hover{background:rgba(0,0,0,.14);}
+  .abtns .sembtn.alt{background:#fff4d6;border-color:#e7b24a;color:#7a5400;}
+  .assign.cellconf{outline:2px solid var(--warn);outline-offset:0;}
 
   .periods{display:flex;flex-direction:column;}
   .prow{display:flex;align-items:stretch;gap:0;min-height:23px;border-top:1px solid rgba(0,0,0,.06);cursor:pointer;}
@@ -259,7 +264,7 @@
   <footer class="note">
     Deux colonnes par jour = vos deux titulaires (bleu = Ens. 1, violet = Ens. 2) ; quand les deux ont cours en même temps, les classes sont côte à côte.
     Chaque créneau est découpé en 4 lignes <b>P1 → P4</b> (les cycles de l'année) : tapez l'activité, le <b>nombre de séances</b> (calculé pour la zone C, vacances et fériés déduits) s'affiche à côté, puis cliquez le bouton de droite pour le <b>lieu</b> (la couleur).
-    Le bouton <code>co</code> ajoute la co-animation TZR. Glissez une carte sur une autre case pour permuter deux classes. Données enregistrées dans le navigateur ; déposez <code>index.html</code> sur GitHub Pages.
+    Le bouton <code>co</code> ajoute la co-animation TZR ; le bouton <b>hebdo / sem. A / sem. B</b> indique si le cours a lieu toutes les semaines ou une semaine sur deux (deux classes peuvent alors partager un créneau en alternance A/B). Les heures comptent 2 h pour un hebdo, 1 h en moyenne pour une quinzaine, et le décompte de séances est ajusté. Glissez une carte sur une autre case pour déplacer une classe (2 cartes maximum par case). Données enregistrées dans le navigateur ; déposez <code>index.html</code> sur GitHub Pages.
   </footer>
 
   </div><!-- /viewPlan -->
@@ -351,22 +356,32 @@ function isOff(d){ const iso=isoOf(d);
   for(let i=0;i<VACANCES.length;i++){ if(iso>=VACANCES[i][0] && iso<=VACANCES[i][1]) return true; }
   return FERIES.indexOf(iso)>-1;
 }
-function countSessions(weekday, startStr, endStr){
+// référence quinzaine : lundi de la semaine de rentrée (semaine A)
+const REF_MONDAY = new Date(2026,7,31); // 31 août 2026
+function weekParity(d){ const w=Math.floor((d - REF_MONDAY)/(7*86400000)); return ((w%2)+2)%2; } // 0=A,1=B
+function countSessions(weekday, startStr, endStr, sem){
   const start=parseD(startStr), end=parseD(endStr);
   if(!start || !end || end<start) return null;
   let n=0;
   for(let dt=new Date(start); dt<=end; dt.setDate(dt.getDate()+1)){
-    if(dt.getDay()===weekday && !isOff(dt)) n++;
+    if(dt.getDay()===weekday && !isOff(dt)){
+      if(sem==='A'){ if(weekParity(dt)===0) n++; }
+      else if(sem==='B'){ if(weekParity(dt)===1) n++; }
+      else n++;
+    }
   }
   return n;
 }
 function computeSessionsMap(){
   const map={};
   Object.keys(WEEKDAY).forEach(dk=>{ map[dk]=[];
-    for(let i=0;i<NPER;i++){ const per=state.periods[i]||{}; map[dk].push(countSessions(WEEKDAY[dk], per.start, per.end)); }
+    for(let i=0;i<NPER;i++){ const per=state.periods[i]||{}; const wd=WEEKDAY[dk];
+      map[dk].push({ AB:countSessions(wd,per.start,per.end,'AB'), A:countSessions(wd,per.start,per.end,'A'), B:countSessions(wd,per.start,per.end,'B') });
+    }
   });
   return map;
 }
+function sessOf(day,i,sem){ const m=SESS[day]&&SESS[day][i]; if(!m)return null; return m[sem||'AB']; }
 
 /* ---------- État ---------- */
 let state = defaultState();
@@ -387,7 +402,7 @@ function defaultState(){
 }
 function makeCard(classe){
   const p=[]; for(let i=0;i<NPER;i++) p.push({act:'',fac:'none'});
-  return {id:'c'+(state.seq++), classe:classe, co:null, open:!state.collapsed, p:p};
+  return {id:'c'+(state.seq++), classe:classe, co:null, open:!state.collapsed, semaine:'AB', p:p};
 }
 function makeASentry(){ return {id:'a'+(state.seq++), apsa:'', profs:[true,false,false]}; }
 
@@ -399,13 +414,18 @@ function load(){
   try{ const raw=localStorage.getItem(STORAGE_KEY);
     if(raw){ const s=JSON.parse(raw); if(s&&s.meta){ state=Object.assign(defaultState(),s); } }
   }catch(e){}
-  // garde-fous structure
-  Object.keys(state.cells).forEach(k=>{ const c=state.cells[k];
-    if(!c){ delete state.cells[k]; return; }
-    if(!Array.isArray(c.p)){ c.p=[]; }
-    while(c.p.length<NPER) c.p.push({act:'',fac:'none'});
-    if(c.co===undefined) c.co=null;
-    if(c.open===undefined) c.open=true;
+  // garde-fous structure : chaque case = tableau de cartes (max 2)
+  Object.keys(state.cells).forEach(k=>{ let v=state.cells[k];
+    if(!v){ delete state.cells[k]; return; }
+    if(!Array.isArray(v)){ v=[v]; state.cells[k]=v; } // ancien modèle : 1 carte -> tableau
+    v.forEach(c=>{
+      if(!Array.isArray(c.p)){ c.p=[]; }
+      while(c.p.length<NPER) c.p.push({act:'',fac:'none'});
+      if(c.co===undefined) c.co=null;
+      if(c.open===undefined) c.open=true;
+      if(!c.semaine) c.semaine='AB';
+    });
+    if(!v.length) delete state.cells[k];
   });
   if(!Array.isArray(state.periods)) state.periods=[];
   for(let i=0;i<NPER;i++){ const p=state.periods[i];
@@ -417,9 +437,10 @@ function load(){
   if(!state.as || typeof state.as!=='object') state.as={};
   ['as1','as2','as3'].forEach(sk=>{ if(!Array.isArray(state.as[sk])) state.as[sk]=[]; });
   ['as1','as2','as3'].forEach(sk=>{
-    for(let l=0;l<2;l++){ const ok='mer-'+sk+'-'+l; const c=state.cells[ok];
-      if(c){ const profs=[false,false,false]; profs[l]=true; if(c.co!=null) profs[2]=true;
-        state.as[sk].push({id:'a'+(state.seq++), apsa:c.classe||'', profs:profs}); delete state.cells[ok]; } }
+    for(let l=0;l<2;l++){ const ok='mer-'+sk+'-'+l; const arr=state.cells[ok];
+      if(Array.isArray(arr)) arr.forEach(c=>{ const profs=[false,false,false]; profs[l]=true; if(c.co!=null) profs[2]=true;
+        state.as[sk].push({id:'a'+(state.seq++), apsa:c.classe||'', profs:profs}); });
+      delete state.cells[ok]; }
   });
 }
 function flashSaved(){ const t=document.getElementById('savetxt'); if(!t)return;
@@ -429,26 +450,46 @@ function flashSaved(){ const t=document.getElementById('savetxt'); if(!t)return;
 function initials(name){ const w=(name||'').trim().split(/\s+/).filter(Boolean);
   if(!w.length) return '??'; if(w.length===1) return w[0].slice(0,3).toUpperCase(); return (w[0][0]+w[1][0]).toUpperCase(); }
 function key(d,s,l){ return d+'-'+s+'-'+l; }
-function getCard(d,s,l){ return state.cells[key(d,s,l)]; }
+function cellArr(k){ return state.cells[k]||(state.cells[k]=[]); }
+function cardsAt(d,s,l){ return state.cells[key(d,s,l)]||[]; }
+function findCard(id){ for(const k in state.cells){ const a=state.cells[k]; if(!a)continue; const c=a.find(x=>x&&x.id===id); if(c) return {card:c,key:k,arr:a}; } return null; }
+const SEM_NEXT={AB:'A',A:'B',B:'AB'};
+const SEM_LABEL={AB:'hebdo',A:'sem. A',B:'sem. B'};
+function weeksOverlap(a,b){ return a==='AB'||b==='AB'||a===b; }
 function escHtml(s){ return (s+'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
 function esc(s){ return (s+'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
 function allSlots(){ return SLOTS.map(s=>s.key).concat(AS_SLOTS.map(s=>s.key)); }
 function isASkey(k){ return k.indexOf('-as')>-1; }
 
-/* ---------- Conflits (par période et par créneau) ---------- */
+/* ---------- Conflits (semaines A/B prises en compte) ---------- */
 function computeConflicts(){
-  Object.keys(state.cells).forEach(k=>{ const c=state.cells[k]; if(c){ c._pconf=[false,false,false,false]; c._coConf=false; } });
+  Object.keys(state.cells).forEach(k=>{ const a=state.cells[k]; if(a) a.forEach(c=>{ c._pconf=[false,false,false,false]; c._coConf=false; c._cellConf=false; }); });
   let total=0;
   DAYS.forEach(d=>{
     allSlots().forEach(sk=>{
-      const c0=getCard(d.key,sk,0), c1=getCard(d.key,sk,1);
+      const a0=cardsAt(d.key,sk,0), a1=cardsAt(d.key,sk,1);
+      // 1) doublon dans une même case (lane) : 2 cartes hebdo/même semaine, ou >2
+      [a0,a1].forEach(arr=>{
+        if(arr.length>2){ arr.forEach(c=>{ if(!c._cellConf){c._cellConf=true;total++;} }); }
+        for(let x=0;x<arr.length;x++) for(let y=x+1;y<arr.length;y++){
+          if(weeksOverlap(arr[x].semaine,arr[y].semaine)){ [arr[x],arr[y]].forEach(c=>{ if(!c._cellConf){c._cellConf=true;total++;} }); }
+        }
+      });
+      const all=a0.concat(a1);
+      // 2) installation par période : capacité dépassée sur une même semaine
       for(let p=0;p<NPER;p++){
-        const used={};
-        [c0,c1].forEach(c=>{ if(c){ const f=c.p[p].fac; if(f&&f!=='none') used[f]=(used[f]||0)+1; } });
-        [c0,c1].forEach(c=>{ if(c){ const f=c.p[p].fac; if(f&&f!=='none'){ const cap=(FAC[f]&&FAC[f].cap)||1;
-          if(used[f]>cap && !c._pconf[p]){ c._pconf[p]=true; total++; } } } });
+        const byFac={};
+        all.forEach(c=>{ const f=c.p[p].fac; if(f&&f!=='none'){ (byFac[f]=byFac[f]||[]).push(c); } });
+        Object.keys(byFac).forEach(f=>{ const cap=(FAC[f]&&FAC[f].cap)||1; const grp=byFac[f];
+          const inA=grp.filter(c=>c.semaine!=='B').length, inB=grp.filter(c=>c.semaine!=='A').length;
+          if(Math.max(inA,inB)>cap){ grp.forEach(c=>{ if(!c._pconf[p]){c._pconf[p]=true;total++;} }); }
+        });
       }
-      if(c0&&c1&&c0.co!=null&&c1.co!=null){ c0._coConf=true; c1._coConf=true; total++; }
+      // 3) TZR (co-animation) sur 2 cours en même temps et semaines qui se chevauchent
+      const cos=all.filter(c=>c.co!=null);
+      for(let x=0;x<cos.length;x++) for(let y=x+1;y<cos.length;y++){
+        if(weeksOverlap(cos[x].semaine,cos[y].semaine)){ [cos[x],cos[y]].forEach(c=>{ if(!c._coConf){c._coConf=true;total++;} }); }
+      }
     });
   });
   // AS : un même encadrant ne peut animer 2 activités sur le même créneau
@@ -478,14 +519,16 @@ function render(){
 function setVal(id,v){ const el=document.getElementById(id); if(el && document.activeElement!==el) el.value=v||''; }
 function renderProfMarks(){ for(let i=0;i<3;i++){ const el=document.getElementById('pm'+i); if(el){ el.style.background=PROF_STYLE[i].color; } } }
 
+function cardHours(c, isAS){ const base=isAS?HOUR_PER_AS:HOUR_PER_SLOT; return (c.semaine==='A'||c.semaine==='B')?base/2:base; }
+function fmtH(x){ return Number.isInteger(x)?x:(Math.round(x*10)/10); }
 function renderHours(){
   const h=[0,0,0];
-  Object.keys(state.cells).forEach(k=>{ const c=state.cells[k]; if(!c)return;
-    const parts=k.split('-'); const lane=+parts[2]; const add=isASkey(k)?HOUR_PER_AS:HOUR_PER_SLOT;
-    h[lane]+=add; if(c.co!=null) h[2]+=add;
+  Object.keys(state.cells).forEach(k=>{ const a=state.cells[k]; if(!a)return;
+    const lane=+k.split('-')[2]; const isAS=isASkey(k);
+    a.forEach(c=>{ const hr=cardHours(c,isAS); h[lane]+=hr; if(c.co!=null) h[2]+=hr; });
   });
   ['as1','as2','as3'].forEach(sk=>{ (state.as[sk]||[]).forEach(e=>{ for(let t=0;t<3;t++) if(e.profs[t]) h[t]+=HOUR_PER_AS; }); });
-  for(let i=0;i<3;i++){ const span=document.getElementById('h-p'+i); if(span) span.textContent = h[i] ? '— '+h[i]+' h/sem':''; }
+  for(let i=0;i<3;i++){ const span=document.getElementById('h-p'+i); if(span) span.textContent = h[i] ? '— '+fmtH(h[i])+' h/sem':''; }
 }
 function renderConflictStatus(n){
   const el=document.getElementById('conflictStatus');
@@ -517,8 +560,9 @@ function laneHead(){
        + `<th class="lanehead" style="border-bottom:3px solid ${PROF_STYLE[1].color}">${escHtml(state.profs[1]||'Ens. 2')}</th>`;
 }
 function laneCell(d,s,l){
-  const k=key(d,s,l); const c=state.cells[k];
-  return `<td class="lane" data-key="${k}" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="dropCell(event,'${k}')" onclick="cellTap('${k}')">${c?renderCard(k,c):''}</td>`;
+  const k=key(d,s,l); const arr=state.cells[k]||[];
+  const inner=arr.map(c=>renderCard(k,c)).join('');
+  return `<td class="lane" data-key="${k}" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="dropCell(event,'${k}')" onclick="cellTap('${k}')">${inner}</td>`;
 }
 function renderGrid(){
   let h='<table class="edt"><thead><tr><th class="corner timecol" rowspan="2">Horaire</th>';
@@ -576,37 +620,42 @@ function teacherASAt(t,sk){ return (state.as[sk]||[]).filter(e=>e.profs[t]).map(
 
 function renderCard(k,c){
   const day=k.split('-')[0];
+  const id=c.id;
   const co=c.co!=null;
   const open=c.open!==false;
   const coCls = co ? (c._coConf?' on bad':' on') : '';
   const coTitle = co ? (state.profs[2]||'TZR')+' en co-animation — cliquez pour retirer'+(c._coConf?' (TZR déjà sur l\'autre cours !)':'') : 'Ajouter la co-animation TZR';
+  const sem=c.semaine||'AB';
   let rows='';
   if(open) for(let i=0;i<NPER;i++){
     const f=FAC[c.p[i].fac]||FAC.none;
     const pconf=c._pconf&&c._pconf[i]?' pconf':'';
     const range=state.periods[i]&&state.periods[i].start?(' — '+state.periods[i].start+' → '+state.periods[i].end):'';
-    const cnt=(SESS[day]&&SESS[day][i]!=null)?SESS[day][i]:null;
+    const cnt=sessOf(day,i,sem);
     const cntTxt=cnt==null?'–':(cnt+' séa.');
-    const cntTitle=cnt==null?'Renseignez les dates de cette période':(cnt+' séance'+(cnt>1?'s':'')+' — zone C, vacances et jours fériés déduits');
-    rows+=`<div class="prow${pconf}" style="background:${f.bg};color:${f.fg}" title="Lieu : ${f.label} — cliquez pour changer" onclick="cyclePFac('${k}',${i})">
+    const cntTitle=cnt==null?'Renseignez les dates de cette période':(cnt+' séance'+(cnt>1?'s':'')+' — '+SEM_LABEL[sem]+', zone C, vacances et fériés déduits');
+    rows+=`<div class="prow${pconf}" style="background:${f.bg};color:${f.fg}" title="Lieu : ${f.label} — cliquez pour changer" onclick="cyclePFac('${id}',${i})">
         <span class="plab" title="Période ${i+1}${escHtml(range)}">P${i+1}</span>
-        <input class="pact" value="${escHtml(c.p[i].act)}" placeholder="activité" oninput="setAct('${k}',${i},this.value)" onclick="event.stopPropagation()" draggable="false">
+        <input class="pact" value="${escHtml(c.p[i].act)}" placeholder="activité" oninput="setAct('${id}',${i},this.value)" onclick="event.stopPropagation()" draggable="false">
         <span class="pcount" title="${escHtml(cntTitle)}" onclick="event.stopPropagation()">${cntTxt}</span>
-        <button class="pfac" title="Lieu : ${f.label} — cliquez pour changer d'installation" onclick="event.stopPropagation();cyclePFac('${k}',${i})">${f.short}</button>
+        <button class="pfac" title="Lieu : ${f.label} — cliquez pour changer d'installation" onclick="event.stopPropagation();cyclePFac('${id}',${i})">${f.short}</button>
       </div>`;
   }
   const ns=niveauStyle(c.classe);
-  const anyConf = c._coConf || (c._pconf&&c._pconf.some(Boolean));
-  return `<div class="assign${open?'':' closed'}">
-    <div class="ahead" draggable="true" ondragstart="dragCard(event,'${k}')" style="background:${ns.bg};color:${ns.fg};border-left:5px solid ${ns.stripe}">
+  const anyConf = c._coConf || c._cellConf || (c._pconf&&c._pconf.some(Boolean));
+  const semCls = sem==='AB'?'':' alt';
+  const semTitle = sem==='AB'?'Toutes les semaines — cliquez pour passer en quinzaine':'Une semaine sur 2 ('+SEM_LABEL[sem]+') — cliquez pour changer';
+  return `<div class="assign${open?'':' closed'}${c._cellConf?' cellconf':''}">
+    <div class="ahead" draggable="true" ondragstart="dragCard(event,'${id}')" style="background:${ns.bg};color:${ns.fg};border-left:5px solid ${ns.stripe}">
       <span class="ahleft">
-        <span class="adisc" title="${open?'Masquer':'Afficher'} les périodes" onclick="event.stopPropagation();toggleCard('${k}')">${open?'▾':'▸'}</span>
+        <span class="adisc" title="${open?'Masquer':'Afficher'} les périodes" onclick="event.stopPropagation();toggleCard('${id}')">${open?'▾':'▸'}</span>
         <span class="acls" title="${escHtml(c.classe)}">${escHtml(c.classe)}${co?'  + '+escHtml(initials(state.profs[2])):''}${(!open&&anyConf)?' <span class="miniwarn" title="conflit à vérifier">⚠</span>':''}</span>
       </span>
       <span class="abtns">
-        <button class="act co${coCls}" title="${escHtml(coTitle)}" onclick="event.stopPropagation();toggleCo('${k}')">co</button>
-        <button class="act" title="Déplacer (tactile)" onclick="event.stopPropagation();armCard('${k}')">⤴</button>
-        <button class="act" title="Supprimer" onclick="event.stopPropagation();delCard('${k}')">✕</button>
+        <button class="sembtn${semCls}" title="${semTitle}" onclick="event.stopPropagation();cycleSemaine('${id}')">${SEM_LABEL[sem]}</button>
+        <button class="act co${coCls}" title="${escHtml(coTitle)}" onclick="event.stopPropagation();toggleCo('${id}')">co</button>
+        <button class="act" title="Déplacer (tactile)" onclick="event.stopPropagation();armCard('${id}')">⤴</button>
+        <button class="act" title="Supprimer" onclick="event.stopPropagation();delCard('${id}')">✕</button>
       </span>
     </div>
     ${open?`<div class="periods">${rows}</div>`:''}
@@ -619,7 +668,7 @@ function renderArmbar(){
   bar.classList.add('show');
   let label='';
   if(arm.type==='pool') label=`Classe <b>${escHtml(arm.classe)}</b> sélectionnée — cliquez une colonne pour la poser.`;
-  else { const c=state.cells[arm.key]; label=`Carte <b>${escHtml(c?c.classe:'')}</b> en déplacement — cliquez la case de destination (échange si occupée).`; }
+  else { const f=findCard(arm.id); label=`Carte <b>${escHtml(f?f.card.classe:'')}</b> en déplacement — cliquez la case de destination.`; }
   document.getElementById('armtxt').innerHTML=label;
 }
 
@@ -631,47 +680,54 @@ function removeClass(i){ state.pool.splice(i,1); save(); render(); }
 
 /* ---------- Drag & drop (souris) ---------- */
 function dragPool(e,cl){ dragData={type:'pool',classe:cl}; e.dataTransfer.effectAllowed='copy'; }
-function dragCard(e,k){ dragData={type:'card',key:k}; e.dataTransfer.effectAllowed='move'; }
+function dragCard(e,id){ dragData={type:'card',id:id}; e.dataTransfer.effectAllowed='move'; }
 function allowDrop(e){ e.preventDefault(); e.currentTarget.classList.add('dropok'); }
 function leaveDrop(e){ e.currentTarget.classList.remove('dropok'); }
 function dropCell(e,destKey){
   e.preventDefault(); e.currentTarget.classList.remove('dropok');
   if(!dragData) return;
   if(dragData.type==='pool') placeNew(destKey,dragData.classe);
-  else moveOrSwap(dragData.key,destKey);
+  else moveCard(dragData.id,destKey);
   dragData=null; save(); render();
 }
 
 /* ---------- Mode tactile ---------- */
 function armPool(cl){ arm=(arm&&arm.type==='pool'&&arm.classe===cl)?null:{type:'pool',classe:cl}; render(); }
-function armCard(k){ arm=(arm&&arm.type==='card'&&arm.key===k)?null:{type:'card',key:k}; render(); }
+function armCard(id){ arm=(arm&&arm.type==='card'&&arm.id===id)?null:{type:'card',id:id}; render(); }
 function disarm(){ arm=null; render(); }
 function cellTap(destKey){
   if(!arm) return;
   if(arm.type==='pool') placeNew(destKey,arm.classe);
-  else moveOrSwap(arm.key,destKey);
+  else moveCard(arm.id,destKey);
   arm=null; save(); render();
 }
 
-/* ---------- Manipulation ---------- */
-function placeNew(destKey,classe){ if(state.cells[destKey]) return; state.cells[destKey]=makeCard(classe); }
-function moveOrSwap(srcKey,destKey){
-  if(srcKey===destKey) return;
-  const src=state.cells[srcKey], dst=state.cells[destKey];
-  state.cells[destKey]=src;
-  if(dst) state.cells[srcKey]=dst; else delete state.cells[srcKey];
+/* ---------- Manipulation (cases = tableaux, max 2 cartes) ---------- */
+function placeNew(destKey,classe){ const a=cellArr(destKey); if(a.length>=2){ return; }
+  const c=makeCard(classe);
+  if(a.length===1){ const ex=a[0];
+    if(ex.semaine==='A') c.semaine='B';
+    else if(ex.semaine==='B') c.semaine='A';
+    else { ex.semaine='A'; c.semaine='B'; } // 2e classe -> alternance auto A/B
+  }
+  a.push(c);
 }
-function delCard(k){ delete state.cells[k]; save(); render(); }
-function toggleCo(k){ const c=state.cells[k]; if(!c)return; c.co=(c.co==null)?2:null; save(); render(); }
-function toggleCard(k){ const c=state.cells[k]; if(!c)return; c.open=!(c.open!==false); save(); render(); }
+function moveCard(id,destKey){ const f=findCard(id); if(!f)return; if(f.key===destKey) return;
+  const dest=cellArr(destKey); if(dest.length>=2){ flashFull(destKey); return; }
+  f.arr.splice(f.arr.indexOf(f.card),1); if(!f.arr.length) delete state.cells[f.key]; dest.push(f.card); }
+function flashFull(){ /* case déjà pleine (2 cartes max) : on ne fait rien */ }
+function delCard(id){ const f=findCard(id); if(!f)return; f.arr.splice(f.arr.indexOf(f.card),1); if(!f.arr.length) delete state.cells[f.key]; save(); render(); }
+function toggleCo(id){ const f=findCard(id); if(!f)return; f.card.co=(f.card.co==null)?2:null; save(); render(); }
+function toggleCard(id){ const f=findCard(id); if(!f)return; f.card.open=!(f.card.open!==false); save(); render(); }
+function cycleSemaine(id){ const f=findCard(id); if(!f)return; f.card.semaine=SEM_NEXT[f.card.semaine||'AB']; save(); render(); }
 function toggleAllPeriods(){
   state.collapsed=!state.collapsed;
-  Object.keys(state.cells).forEach(k=>{ const c=state.cells[k]; if(c) c.open=!state.collapsed; });
+  Object.keys(state.cells).forEach(k=>{ const a=state.cells[k]; if(a) a.forEach(c=>c.open=!state.collapsed); });
   save(); render();
 }
-function cyclePFac(k,i){ const c=state.cells[k]; if(!c)return; const cur=FAC_CYCLE.indexOf(c.p[i].fac);
-  c.p[i].fac=FAC_CYCLE[(cur+1)%FAC_CYCLE.length]; save(); render(); }
-function setAct(k,i,val){ const c=state.cells[k]; if(!c)return; c.p[i].act=val; saveSoon(); }
+function cyclePFac(id,i){ const f=findCard(id); if(!f)return; const cur=FAC_CYCLE.indexOf(f.card.p[i].fac);
+  f.card.p[i].fac=FAC_CYCLE[(cur+1)%FAC_CYCLE.length]; save(); render(); }
+function setAct(id,i,val){ const f=findCard(id); if(!f)return; f.card.p[i].act=val; saveSoon(); }
 
 /* ---------- Réinitialisation ---------- */
 function resetEDT(){ if(confirm("Vider toutes les classes posées ?\n(Réserve, enseignants, périodes et réglages conservés.)")){ state.cells={}; arm=null; save(); render(); } }
@@ -690,10 +746,17 @@ function bindDate(id,idx,field){ const el=document.getElementById(id); if(!el)re
   el.addEventListener('change',()=>{ state.periods[idx][field]=el.value; save(); render(); }); }
 
 /* ---------- Export EXCEL ---------- */
-function laneActivity(c,p,dayKey){ if(!c) return ''; const f=FAC[c.p[p].fac];
+function cardActivity(c,p,dayKey){ const f=FAC[c.p[p].fac];
   const lieu=(c.p[p].fac&&c.p[p].fac!=='none')?' ('+f.label+')':'';
-  const cnt=(SESS[dayKey]&&SESS[dayKey][p]!=null)?(' · '+SESS[dayKey][p]+' séa.'):'';
-  return (c.p[p].act||'')+cnt+lieu; }
+  const cnt=sessOf(dayKey,p,c.semaine||'AB'); const cstr=(cnt!=null)?(' · '+cnt+' séa.'):'';
+  const pre=(c.semaine&&c.semaine!=='AB')?('['+c.semaine+'] '):'';
+  return pre+(c.p[p].act||'')+cstr+lieu; }
+function laneCellHead(d,sk,l){
+  const arr=cardsAt(d,sk,l);
+  if(!arr.length) return isDisabled(d,sk)?'— AS —':'';
+  return arr.map(c=>c.classe+(c.semaine&&c.semaine!=='AB'?' ['+c.semaine+']':'')+(c.co!=null?' + '+initials(state.profs[2])+' (co)':'')).join('  /  ');
+}
+function laneCellAct(d,sk,l,p){ const arr=cardsAt(d,sk,l); if(!arr.length) return ''; return arr.map(c=>cardActivity(c,p,d)).join('  /  '); }
 function buildBlock(slotList,isAS){
   const aoa=[];
   const dayRow=['']; DAYS.forEach(d=>{ dayRow.push(d.label,''); });
@@ -701,11 +764,11 @@ function buildBlock(slotList,isAS){
   const teachRow=['']; DAYS.forEach(()=>{ teachRow.push(state.profs[0]||'Ens.1', state.profs[1]||'Ens.2'); });
   aoa.push(teachRow);
   slotList.forEach(s=>{
-    const head=[s.range]; DAYS.forEach(d=>{ for(let l=0;l<2;l++){ const c=getCard(d.key,s.key,l); head.push(c?(c.classe+(c.co!=null?' + '+initials(state.profs[2])+' (co)':'')):(isDisabled(d.key,s.key)?'— AS —':'')); } });
+    const head=[s.range]; DAYS.forEach(d=>{ for(let l=0;l<2;l++){ head.push(laneCellHead(d.key,s.key,l)); } });
     aoa.push(head);
     for(let p=0;p<NPER;p++){
       const label='P'+(p+1)+(state.periods[p]&&state.periods[p].start?' · '+state.periods[p].start+'→'+state.periods[p].end:'');
-      const row=[label]; DAYS.forEach(d=>{ for(let l=0;l<2;l++){ row.push(laneActivity(getCard(d.key,s.key,l),p,d.key)); } });
+      const row=[label]; DAYS.forEach(d=>{ for(let l=0;l<2;l++){ row.push(laneCellAct(d.key,s.key,l,p)); } });
       aoa.push(row);
     }
     aoa.push([]);
@@ -730,8 +793,10 @@ function exportXLSX(){
   XLSX.utils.book_append_sheet(wb,ws2,'AS Mercredi');
 
   const h=[0,0,0];
-  Object.keys(state.cells).forEach(k=>{ const c=state.cells[k]; if(!c)return; const lane=+k.split('-')[2]; const add=isASkey(k)?1:2; h[lane]+=add; if(c.co!=null)h[2]+=add; });
-  const a3=[['Enseignant','Heures EPS / semaine']]; state.profs.forEach((p,i)=>a3.push([p,h[i]]));
+  Object.keys(state.cells).forEach(k=>{ const a=state.cells[k]; if(!a)return; const lane=+k.split('-')[2]; const isAS=isASkey(k);
+    a.forEach(c=>{ const hr=cardHours(c,isAS); h[lane]+=hr; if(c.co!=null)h[2]+=hr; }); });
+  ['as1','as2','as3'].forEach(sk=>{ (state.as[sk]||[]).forEach(e=>{ for(let t=0;t<3;t++) if(e.profs[t]) h[t]+=HOUR_PER_AS; }); });
+  const a3=[['Enseignant','Heures EPS / semaine']]; state.profs.forEach((p,i)=>a3.push([p,fmtH(h[i])]));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a3),'Récap enseignants');
 
   const safe=(state.meta.annee||'EPS').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_');
@@ -768,16 +833,15 @@ function setView(v){
   if(v==='prof') renderProf();
 }
 function teacherHours(){ const h=[0,0,0];
-  Object.keys(state.cells).forEach(k=>{ const c=state.cells[k]; if(!c)return;
-    const lane=+k.split('-')[2]; const add=isASkey(k)?HOUR_PER_AS:HOUR_PER_SLOT; h[lane]+=add; if(c.co!=null) h[2]+=add; });
+  Object.keys(state.cells).forEach(k=>{ const a=state.cells[k]; if(!a)return; const lane=+k.split('-')[2]; const isAS=isASkey(k);
+    a.forEach(c=>{ const hr=cardHours(c,isAS); h[lane]+=hr; if(c.co!=null) h[2]+=hr; }); });
   ['as1','as2','as3'].forEach(sk=>{ (state.as[sk]||[]).forEach(e=>{ for(let t=0;t<3;t++) if(e.profs[t]) h[t]+=HOUR_PER_AS; }); });
   return h; }
 /* classe(s) de l'enseignant t (0,1 = titulaires ; 2 = TZR via co-animation) à un créneau */
+function lab(c){ return c.classe+(c.semaine&&c.semaine!=='AB'?' ('+c.semaine+')':''); }
 function teacherClassAt(t,day,slotKey){
-  if(t<2){ const c=getCard(day,slotKey,t); return c?c.classe:''; }
-  const res=[]; const c0=getCard(day,slotKey,0), c1=getCard(day,slotKey,1);
-  if(c0&&c0.co!=null) res.push(c0.classe);
-  if(c1&&c1.co!=null) res.push(c1.classe);
+  if(t<2){ return cardsAt(day,slotKey,t).map(lab).join(' / '); }
+  const res=[]; cardsAt(day,slotKey,0).concat(cardsAt(day,slotKey,1)).forEach(c=>{ if(c.co!=null) res.push(lab(c)); });
   return res.join(' / ');
 }
 function profCell(txt){
@@ -809,7 +873,7 @@ function renderProf(){
     html+=`<div class="prof-sheet">
       <div class="prof-h" style="border-left:6px solid ${PROF_STYLE[t].color}">
         <span class="prof-name">${escHtml(state.profs[t]||roles[t])}</span>
-        <span class="prof-meta">${escHtml(roles[t])}${h[t]?' · '+h[t]+' h / semaine':' · pas de cours'}</span>
+        <span class="prof-meta">${escHtml(roles[t])}${h[t]?' · '+fmtH(h[t])+' h / semaine':' · pas de cours'}</span>
       </div>${profGrid(t)}</div>`;
   }
   document.getElementById('profMount').innerHTML=html;
