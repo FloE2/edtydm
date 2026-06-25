@@ -7,6 +7,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- Firebase (partage temps réel + connexion Google) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
   :root{
     --ink:#16202b; --ink-soft:#52606d; --muted:#8a96a3;
@@ -20,6 +24,18 @@
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     background:var(--bg);color:var(--ink);line-height:1.4;-webkit-font-smoothing:antialiased;}
   .wrap{max-width:1500px;margin:0 auto;padding:22px 20px 60px;}
+  .cloudbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;
+    border:1px solid var(--line);border-radius:9px;padding:9px 14px;margin-bottom:14px;background:var(--surface);box-shadow:var(--shadow);}
+  .cloudbar.local{color:var(--ink-soft);background:#f7f9fb;}
+  .cloudbar.out{background:#eef5ff;border-color:#cfe0f7;}
+  .cloudbar.in{background:#eaf7ee;border-color:#bfe6cb;}
+  .cloudbar .cb-dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none;}
+  .cloudbar .cb-dot.connected{background:var(--ok);}
+  .cloudbar .cb-dot.saving{background:#e6a100;}
+  .cloudbar .cb-dot.error{background:var(--warn);}
+  .cloudbar .cb-sync{color:var(--ink-soft);font-size:12px;}
+  .cloudbar .cb-btn{margin-left:6px;padding:6px 12px;}
+  .cloudbar b{color:var(--ink);}
   .tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--line);}
   .tab{cursor:pointer;border:none;background:transparent;font-size:14px;font-weight:700;color:var(--ink-soft);
     padding:9px 16px;border-bottom:3px solid transparent;margin-bottom:-1px;}
@@ -203,6 +219,8 @@
     <div class="savebadge"><span class="savedot"></span><span id="savetxt">Sauvegarde automatique</span></div>
   </header>
 
+  <div class="cloudbar" id="cloudbar"></div>
+
   <div class="tabs">
     <button class="tab active" id="tab-plan" onclick="setView('plan')">Planification</button>
     <button class="tab" id="tab-prof" onclick="setView('prof')">Emplois du temps — proposition</button>
@@ -322,6 +340,19 @@ const NPER = 4;
 const STORAGE_KEY = 'edt_eps_v2';
 const HOUR_PER_SLOT = 2, HOUR_PER_AS = 1;
 
+/* ============ CONFIGURATION FIREBASE ============ */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBVC79UWfby8lLTGoozw_web0fOkJnLTpQ",
+  authDomain: "edtydm.firebaseapp.com",
+  databaseURL: "https://edtydm-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "edtydm",
+  storageBucket: "edtydm.firebasestorage.app",
+  messagingSenderId: "45220538230",
+  appId: "1:45220538230:web:20a28df38d5eacccd8fc57"
+};
+const DB_PATH = "schedules/eps"; // nœud partagé par toute l'équipe EPS
+/* ================================================ */
+
 function isDisabled(dayKey, slotKey){ return dayKey==='mer' && slotKey==='s3'; } // mercredi aprem = AS
 
 /* ---------- Calendrier officiel zone C 2026-2027 (décompte des séances) ---------- */
@@ -406,18 +437,19 @@ function makeCard(classe){
 }
 function makeASentry(){ return {id:'a'+(state.seq++), apsa:'', profs:[true,false,false]}; }
 
-/* ---------- Persistance ---------- */
+/* ---------- Persistance (local + cloud) ---------- */
 let saveTimer=null, saveSoonTimer=null;
-function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); flashSaved(); }catch(e){} }
+function dropUnderscore(k,v){ return (typeof k==='string' && k.charAt(0)==='_') ? undefined : v; }
+function serialize(){ return JSON.stringify(state, dropUnderscore); }
+function saveLocal(){ try{ localStorage.setItem(STORAGE_KEY, serialize()); }catch(e){} }
+function save(){ saveLocal(); flashSaved(); scheduleCloudPush(); }
 function saveSoon(){ clearTimeout(saveSoonTimer); saveSoonTimer=setTimeout(save,400); }
-function load(){
-  try{ const raw=localStorage.getItem(STORAGE_KEY);
-    if(raw){ const s=JSON.parse(raw); if(s&&s.meta){ state=Object.assign(defaultState(),s); } }
-  }catch(e){}
+function normalize(){
   // garde-fous structure : chaque case = tableau de cartes (max 2)
+  if(!state.cells || typeof state.cells!=='object') state.cells={};
   Object.keys(state.cells).forEach(k=>{ let v=state.cells[k];
     if(!v){ delete state.cells[k]; return; }
-    if(!Array.isArray(v)){ v=[v]; state.cells[k]=v; } // ancien modèle : 1 carte -> tableau
+    if(!Array.isArray(v)){ v=[v]; state.cells[k]=v; }
     v.forEach(c=>{
       if(!Array.isArray(c.p)){ c.p=[]; }
       while(c.p.length<NPER) c.p.push({act:'',fac:'none'});
@@ -433,15 +465,24 @@ function load(){
     else { if(typeof p.start!=='string')p.start=''; if(typeof p.end!=='string')p.end='';
       if(!p.start && !p.end){ state.periods[i]=Object.assign({},DEFAULT_PERIODS[i]); } }
   }
-  // AS : nouvelle structure + récupération d'anciennes cartes AS éventuelles
   if(!state.as || typeof state.as!=='object') state.as={};
   ['as1','as2','as3'].forEach(sk=>{ if(!Array.isArray(state.as[sk])) state.as[sk]=[]; });
+  // récupération d'anciennes cartes AS éventuelles
   ['as1','as2','as3'].forEach(sk=>{
     for(let l=0;l<2;l++){ const ok='mer-'+sk+'-'+l; const arr=state.cells[ok];
       if(Array.isArray(arr)) arr.forEach(c=>{ const profs=[false,false,false]; profs[l]=true; if(c.co!=null) profs[2]=true;
         state.as[sk].push({id:'a'+(state.seq++), apsa:c.classe||'', profs:profs}); });
       delete state.cells[ok]; }
   });
+  if(!Array.isArray(state.pool)) state.pool=[];
+  if(!Array.isArray(state.profs)) state.profs=["Prof 1","Prof 2","TZR"];
+  if(typeof state.seq!=='number') state.seq=1;
+}
+function load(){
+  try{ const raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){ const s=JSON.parse(raw); if(s&&s.meta){ state=Object.assign(defaultState(),s); } }
+  }catch(e){}
+  normalize();
 }
 function flashSaved(){ const t=document.getElementById('savetxt'); if(!t)return;
   t.textContent='Enregistré ✓'; clearTimeout(saveTimer); saveTimer=setTimeout(()=>{t.textContent='Sauvegarde automatique';},1200); }
@@ -917,8 +958,75 @@ function exportProfXLSX(){
   XLSX.writeFile(wb,`EDT_profs_${safe||'annee'}.xlsx`);
 }
 
+/* ---------- Synchronisation Firebase (temps réel + auth Google) ---------- */
+let auth=null, dbRef=null, cloudUser=null, cloudReady=false;
+let cloudStatus='local', lastPushedJson=null, cloudPushTimer=null, pendingRemote=null;
+function cloudConfigured(){ return typeof firebase!=='undefined' && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey.indexOf('VOTRE')!==0; }
+function cloudStatusLabel(){ return {connected:'✓ synchronisé',saving:'… enregistrement',error:'⚠ erreur de synchro'}[cloudStatus]||''; }
+function setCloudStatus(s){ cloudStatus=s;
+  const sy=document.getElementById('cb-sync'); if(sy) sy.textContent=cloudStatusLabel();
+  const d=document.querySelector('#cloudbar .cb-dot'); if(d) d.className='cb-dot '+s;
+}
+function renderCloudBar(){
+  const el=document.getElementById('cloudbar'); if(!el) return;
+  if(!cloudConfigured()){ el.className='cloudbar local'; el.innerHTML='<span class="cb-dot"></span> Mode local (hors-ligne) — le partage Firebase n\'est pas disponible ici, mais fonctionnera une fois le fichier publié sur GitHub Pages.'; return; }
+  if(!cloudUser){ el.className='cloudbar out';
+    el.innerHTML='<span class="cb-dot"></span> Partage d\'équipe activé — connectez-vous pour voir et modifier l\'emploi du temps commun. <button class="btn primary cb-btn" onclick="cloudSignIn()">Se connecter avec Google</button>';
+    return; }
+  el.className='cloudbar in';
+  el.innerHTML='<span class="cb-dot '+cloudStatus+'"></span> Connecté : <b>'+escHtml(cloudUser.email||'')+'</b> <span class="cb-sync" id="cb-sync">'+cloudStatusLabel()+'</span> <button class="btn ghost cb-btn" onclick="cloudSignOut()">Déconnexion</button>';
+}
+function initCloud(){
+  renderCloudBar();
+  if(!cloudConfigured()) return;
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    auth=firebase.auth();
+    auth.onAuthStateChanged(function(u){
+      cloudUser=u;
+      if(u){ attachDb(); } else { detachDb(); }
+      renderCloudBar();
+    });
+  }catch(e){ console.error('Firebase init', e); setCloudStatus('error'); renderCloudBar(); }
+}
+function cloudSignIn(){ if(!auth) return; auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+  .catch(function(e){ alert('Connexion impossible : '+(e&&e.message||e)); }); }
+function cloudSignOut(){ if(auth) auth.signOut(); }
+function attachDb(){
+  try{
+    dbRef=firebase.database().ref(DB_PATH); cloudReady=true; setCloudStatus('connected');
+    dbRef.on('value', function(snap){
+      const data=snap.val();
+      if(data==null){ cloudPushNow(); return; } // premier usage : on initialise le nœud partagé
+      applyRemote(data);
+    }, function(err){ console.error('DB read', err); setCloudStatus('error'); renderCloudBar(); });
+  }catch(e){ console.error(e); setCloudStatus('error'); }
+}
+function detachDb(){ if(dbRef){ try{dbRef.off();}catch(e){} dbRef=null; } cloudReady=false; }
+function scheduleCloudPush(){ if(!cloudReady||!cloudUser||!dbRef) return; clearTimeout(cloudPushTimer); setCloudStatus('saving'); cloudPushTimer=setTimeout(cloudPushNow,600); }
+function cloudPushNow(){ if(!cloudReady||!cloudUser||!dbRef) return;
+  try{ lastPushedJson=serialize(); dbRef.set(JSON.parse(lastPushedJson))
+    .then(function(){ setCloudStatus('connected'); })
+    .catch(function(e){ console.error('DB write', e); setCloudStatus('error'); }); }catch(e){}
+}
+function isEditing(){ const el=document.activeElement; return !!(el && (el.tagName==='INPUT'||el.tagName==='TEXTAREA')); }
+function applyRemote(data){
+  const incoming=JSON.stringify(data, dropUnderscore);
+  if(incoming===lastPushedJson){ setCloudStatus('connected'); return; } // notre propre écho
+  if(isEditing()){ pendingRemote=data; return; }                        // ne pas casser une saisie en cours
+  applyRemoteNow(data);
+}
+function applyRemoteNow(data){
+  const armSave=arm; // conserve une sélection tactile éventuelle
+  state=Object.assign(defaultState(), data); normalize();
+  lastPushedJson=serialize(); saveLocal();
+  render(); if(view==='prof') renderProf();
+  setCloudStatus('connected');
+}
+document.addEventListener('focusout', function(){ setTimeout(function(){ if(pendingRemote && !isEditing()){ const d=pendingRemote; pendingRemote=null; applyRemoteNow(d); } },200); });
+
 /* ---------- Init ---------- */
-load(); bindInputs(); render();
+load(); bindInputs(); render(); initCloud();
 </script>
 </body>
 </html>
