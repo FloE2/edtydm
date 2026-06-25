@@ -20,6 +20,27 @@
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     background:var(--bg);color:var(--ink);line-height:1.4;-webkit-font-smoothing:antialiased;}
   .wrap{max-width:1500px;margin:0 auto;padding:22px 20px 60px;}
+  .tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--line);}
+  .tab{cursor:pointer;border:none;background:transparent;font-size:14px;font-weight:700;color:var(--ink-soft);
+    padding:9px 16px;border-bottom:3px solid transparent;margin-bottom:-1px;}
+  .tab:hover{color:var(--ink);}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+  .prop-head{margin:0 0 16px;}
+  .prop-head .prop-etab{font-size:18px;font-weight:800;}
+  .prop-head .prop-an{font-size:13px;color:var(--ink-soft);margin-top:2px;}
+  .prof-sheet{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:14px 16px 16px;margin-bottom:18px;}
+  .prof-h{display:flex;align-items:baseline;gap:12px;padding:2px 0 10px 10px;}
+  .prof-h .prof-name{font-size:17px;font-weight:800;}
+  .prof-h .prof-meta{font-size:12.5px;color:var(--ink-soft);}
+  table.ptt{border-collapse:collapse;width:100%;}
+  table.ptt th,table.ptt td{border:1px solid var(--line);text-align:center;}
+  table.ptt thead th{background:#f4f7fa;font-size:13px;font-weight:700;padding:8px 6px;}
+  table.ptt .ptt-time{background:#f7f9fb;text-align:left;padding:9px 11px;width:140px;font-size:12.5px;}
+  table.ptt .ptt-time span{display:block;font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;}
+  table.ptt td.ptt-c{height:46px;font-size:15px;font-weight:800;}
+  table.ptt td.ptt-off{background:repeating-linear-gradient(45deg,#f5f6f8,#f5f6f8 6px,#eef0f3 6px,#eef0f3 12px);}
 
   header.app{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:18px;}
   .titles .eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;}
@@ -156,6 +177,13 @@
     <div class="savebadge"><span class="savedot"></span><span id="savetxt">Sauvegarde automatique</span></div>
   </header>
 
+  <div class="tabs">
+    <button class="tab active" id="tab-plan" onclick="setView('plan')">Planification</button>
+    <button class="tab" id="tab-prof" onclick="setView('prof')">Emplois du temps — proposition</button>
+  </div>
+
+  <div id="viewPlan">
+
   <section class="panel params">
     <div class="ptitle-row">Établissement &amp; enseignants</div>
     <div class="grid-meta">
@@ -211,6 +239,20 @@
     Chaque créneau est découpé en 4 lignes <b>P1 → P4</b> (les cycles de l'année) : tapez l'activité, le <b>nombre de séances</b> (calculé pour la zone C, vacances et fériés déduits) s'affiche à côté, puis cliquez le bouton de droite pour le <b>lieu</b> (la couleur).
     Le bouton <code>co</code> ajoute la co-animation TZR. Glissez une carte sur une autre case pour permuter deux classes. Données enregistrées dans le navigateur ; déposez <code>index.html</code> sur GitHub Pages.
   </footer>
+
+  </div><!-- /viewPlan -->
+
+  <div id="viewProf" style="display:none">
+    <section class="panel" style="padding:14px 16px;margin-bottom:14px">
+      <div class="ptitle-row">Emplois du temps individuels — classes &amp; horaires uniquement (proposition au chef d'établissement)</div>
+      <div class="toolbar" style="margin-bottom:0">
+        <button class="btn primary" onclick="exportProfPDF()">⬇︎ Export PDF (1 page / enseignant)</button>
+        <button class="btn" onclick="exportProfXLSX()">⬇︎ Export Excel</button>
+        <span class="calnote" style="margin:0 0 0 auto">Vue en lecture seule : modifiez l'emploi du temps dans l'onglet « Planification ».</span>
+      </div>
+    </section>
+    <div id="profPrintable"><div id="profMount"></div></div>
+  </div><!-- /viewProf -->
 
 </div>
 
@@ -633,6 +675,101 @@ function exportPDF(){
     const safe=(state.meta.annee||'EPS').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_');
     pdf.save(`EDT_EPS_${safe||'annee'}.pdf`);
   }).catch(()=>window.print());
+}
+
+/* ---------- Onglet « emplois du temps par enseignant » ---------- */
+let view='plan';
+function setView(v){
+  view=v;
+  document.getElementById('viewPlan').style.display = v==='plan'?'':'none';
+  document.getElementById('viewProf').style.display = v==='prof'?'':'none';
+  document.getElementById('tab-plan').classList.toggle('active', v==='plan');
+  document.getElementById('tab-prof').classList.toggle('active', v==='prof');
+  if(v==='prof') renderProf();
+}
+function teacherHours(){ const h=[0,0,0];
+  Object.keys(state.cells).forEach(k=>{ const c=state.cells[k]; if(!c)return;
+    const lane=+k.split('-')[2]; const add=isASkey(k)?HOUR_PER_AS:HOUR_PER_SLOT; h[lane]+=add; if(c.co!=null) h[2]+=add; });
+  return h; }
+/* classe(s) de l'enseignant t (0,1 = titulaires ; 2 = TZR via co-animation) à un créneau */
+function teacherClassAt(t,day,slotKey){
+  if(t<2){ const c=getCard(day,slotKey,t); return c?c.classe:''; }
+  const res=[]; const c0=getCard(day,slotKey,0), c1=getCard(day,slotKey,1);
+  if(c0&&c0.co!=null) res.push(c0.classe);
+  if(c1&&c1.co!=null) res.push(c1.classe);
+  return res.join(' / ');
+}
+function profCell(txt){
+  if(!txt) return '<td class="ptt-c"></td>';
+  const ns=niveauStyle(txt.split('/')[0].trim());
+  return `<td class="ptt-c" style="background:${ns.bg};color:${ns.fg}">${escHtml(txt)}</td>`;
+}
+function profGrid(t){
+  let h='<table class="ptt"><thead><tr><th class="ptt-time">Horaire</th>';
+  DAYS.forEach(d=>h+=`<th>${d.label}</th>`); h+='</tr></thead><tbody>';
+  SLOTS.forEach(s=>{
+    h+=`<tr><td class="ptt-time"><b>${s.range}</b><span>${s.sub}</span></td>`;
+    DAYS.forEach(d=>{ h+= isDisabled(d.key,s.key) ? '<td class="ptt-off"></td>' : profCell(teacherClassAt(t,d.key,s.key)); });
+    h+='</tr>';
+  });
+  AS_SLOTS.forEach(s=>{
+    h+=`<tr><td class="ptt-time"><b>${s.range}</b><span>AS · 1 h</span></td>`;
+    DAYS.forEach(d=>{ h+= d.key==='mer' ? profCell(teacherClassAt(t,'mer',s.key)) : '<td class="ptt-off"></td>'; });
+    h+='</tr>';
+  });
+  h+='</tbody></table>';
+  return h;
+}
+function renderProf(){
+  const roles=['Enseignant 1','Enseignant 2','Enseignant TZR'];
+  const h=teacherHours();
+  let html=`<div class="prop-head"><div class="prop-etab">${escHtml(state.meta.etab||'')}</div><div class="prop-an">${escHtml(state.meta.annee||'')} · Proposition d'emplois du temps EPS</div></div>`;
+  for(let t=0;t<3;t++){
+    html+=`<div class="prof-sheet">
+      <div class="prof-h" style="border-left:6px solid ${PROF_STYLE[t].color}">
+        <span class="prof-name">${escHtml(state.profs[t]||roles[t])}</span>
+        <span class="prof-meta">${escHtml(roles[t])}${h[t]?' · '+h[t]+' h / semaine':' · pas de cours'}</span>
+      </div>${profGrid(t)}</div>`;
+  }
+  document.getElementById('profMount').innerHTML=html;
+}
+function exportProfPDF(){
+  renderProf();
+  if(typeof html2canvas==='undefined' || !window.jspdf){ window.print(); return; }
+  const jsPDF=window.jspdf.jsPDF;
+  const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const sheets=document.querySelectorAll('#profMount .prof-sheet');
+  const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight(), m=12;
+  let i=0;
+  function next(){
+    if(i>=sheets.length){ const safe=(state.meta.annee||'EPS').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_'); pdf.save(`EDT_profs_${safe||'annee'}.pdf`); return; }
+    html2canvas(sheets[i],{scale:2,backgroundColor:'#ffffff'}).then(canvas=>{
+      let w=pw-m*2, hh=canvas.height*(w/canvas.width); const availH=ph-m*2-8;
+      if(hh>availH){ hh=availH; w=canvas.width*(hh/canvas.height); }
+      if(i>0) pdf.addPage();
+      pdf.setFontSize(12); pdf.setTextColor(20,30,40);
+      pdf.text((state.meta.etab||'')+' — '+(state.meta.annee||''), m, 9);
+      pdf.addImage(canvas.toDataURL('image/png'),'PNG', m+((pw-m*2)-w)/2, 13, w, hh);
+      i++; next();
+    }).catch(()=>{ window.print(); });
+  }
+  next();
+}
+function exportProfXLSX(){
+  if(typeof XLSX==='undefined'){ alert("Excel indisponible (connexion requise au 1er chargement)."); return; }
+  const wb=XLSX.utils.book_new(); const roles=['Ens 1','Ens 2','TZR']; const usedNames={};
+  for(let t=0;t<3;t++){
+    const aoa=[[state.profs[t]||roles[t]],[(state.meta.etab||'')+' · '+(state.meta.annee||'')],[],['Horaire',...DAYS.map(d=>d.label)]];
+    SLOTS.forEach(s=>{ const r=[s.range]; DAYS.forEach(d=>r.push(isDisabled(d.key,s.key)?'':teacherClassAt(t,d.key,s.key))); aoa.push(r); });
+    AS_SLOTS.forEach(s=>{ const r=[s.range+' (AS)']; DAYS.forEach(d=>r.push(d.key==='mer'?teacherClassAt(t,'mer',s.key):'')); aoa.push(r); });
+    const ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=[{wch:18}].concat(Array(DAYS.length).fill({wch:14}));
+    let name=(state.profs[t]||roles[t]).replace(/[\\\/?*\[\]:]/g,' ').slice(0,26).trim()||roles[t];
+    if(usedNames[name]) name=(name+' ('+(t+1)+')').slice(0,31);
+    usedNames[name]=1;
+    XLSX.utils.book_append_sheet(wb,ws,name);
+  }
+  const safe=(state.meta.annee||'EPS').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_');
+  XLSX.writeFile(wb,`EDT_profs_${safe||'annee'}.xlsx`);
 }
 
 /* ---------- Init ---------- */
