@@ -154,6 +154,22 @@
   .as-head h2{font-size:15px;margin:0;font-weight:800;}
   .as-head p{margin:3px 0 0;font-size:12.5px;color:var(--ink-soft);}
   table.as{margin:6px 16px 16px;min-width:520px;}
+  table.as .ascell{padding:8px;background:#fff;}
+  .aslist{display:flex;flex-direction:column;gap:6px;}
+  .asentry{display:flex;align-items:center;gap:7px;border:1px solid var(--line-soft);border-radius:7px;padding:5px 7px;background:#fbfcfd;}
+  .asentry.conf{box-shadow:inset 0 0 0 2px var(--warn);}
+  .asentry .asapsa{flex:1;min-width:0;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:13px;background:#fff;}
+  .asentry .asapsa:focus{outline:2px solid var(--accent);border-color:var(--accent);}
+  .asprofs{display:flex;gap:4px;flex:none;}
+  .asp{cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--muted);font-size:11px;font-weight:800;
+    border-radius:6px;min-width:30px;height:28px;padding:0 6px;}
+  .asp.on{box-shadow:0 1px 2px rgba(0,0,0,.18);}
+  .asp:hover{border-color:var(--accent);}
+  .asdel{cursor:pointer;border:none;background:transparent;color:var(--muted);font-weight:800;font-size:14px;padding:2px 4px;flex:none;}
+  .asdel:hover{color:var(--warn);}
+  .asadd{cursor:pointer;align-self:flex-start;border:1px dashed var(--line);background:#fff;color:var(--accent);
+    font-size:12.5px;font-weight:700;border-radius:7px;padding:6px 12px;margin-top:2px;}
+  .asadd:hover{border-color:var(--accent);background:#f4f8fe;}
   table.as .lanehead{max-width:200px;}
   table.as td.lane{min-width:175px;}
 
@@ -162,7 +178,7 @@
 
   @media print{
     body{background:#fff;}
-    .toolbar,.params,.pool,.legend,.armbar,.savebadge,footer.note,.chip .x,.abtns{display:none !important;}
+    .toolbar,.params,.pool,.legend,.armbar,.savebadge,footer.note,.chip .x,.abtns,.asadd,.asdel,.tabs{display:none !important;}
     .wrap{max-width:none;padding:0;}
     .gridcard,.panel{box-shadow:none;border:none;}
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
@@ -364,6 +380,7 @@ function defaultState(){
     periods:JSON.parse(JSON.stringify(DEFAULT_PERIODS)),
     pool:["6e A","6e B","5e A","5e B","4e A","4e B","3e A","3e B"],
     cells:{},   // "lun-s1-0" -> card | absent
+    as:{as1:[], as2:[], as3:[]}, // AS mercredi : [{id,apsa,profs:[b,b,b]}]
     collapsed:false,
     seq:1
   };
@@ -372,6 +389,7 @@ function makeCard(classe){
   const p=[]; for(let i=0;i<NPER;i++) p.push({act:'',fac:'none'});
   return {id:'c'+(state.seq++), classe:classe, co:null, open:!state.collapsed, p:p};
 }
+function makeASentry(){ return {id:'a'+(state.seq++), apsa:'', profs:[true,false,false]}; }
 
 /* ---------- Persistance ---------- */
 let saveTimer=null, saveSoonTimer=null;
@@ -395,6 +413,14 @@ function load(){
     else { if(typeof p.start!=='string')p.start=''; if(typeof p.end!=='string')p.end='';
       if(!p.start && !p.end){ state.periods[i]=Object.assign({},DEFAULT_PERIODS[i]); } }
   }
+  // AS : nouvelle structure + récupération d'anciennes cartes AS éventuelles
+  if(!state.as || typeof state.as!=='object') state.as={};
+  ['as1','as2','as3'].forEach(sk=>{ if(!Array.isArray(state.as[sk])) state.as[sk]=[]; });
+  ['as1','as2','as3'].forEach(sk=>{
+    for(let l=0;l<2;l++){ const ok='mer-'+sk+'-'+l; const c=state.cells[ok];
+      if(c){ const profs=[false,false,false]; profs[l]=true; if(c.co!=null) profs[2]=true;
+        state.as[sk].push({id:'a'+(state.seq++), apsa:c.classe||'', profs:profs}); delete state.cells[ok]; } }
+  });
 }
 function flashSaved(){ const t=document.getElementById('savetxt'); if(!t)return;
   t.textContent='Enregistré ✓'; clearTimeout(saveTimer); saveTimer=setTimeout(()=>{t.textContent='Sauvegarde automatique';},1200); }
@@ -425,6 +451,12 @@ function computeConflicts(){
       if(c0&&c1&&c0.co!=null&&c1.co!=null){ c0._coConf=true; c1._coConf=true; total++; }
     });
   });
+  // AS : un même encadrant ne peut animer 2 activités sur le même créneau
+  ['as1','as2','as3'].forEach(sk=>{
+    const list=state.as[sk]||[]; const cnt=[0,0,0];
+    list.forEach(e=>{ e._conf=false; for(let t=0;t<3;t++) if(e.profs[t]) cnt[t]++; });
+    list.forEach(e=>{ for(let t=0;t<3;t++){ if(e.profs[t]&&cnt[t]>1) e._conf=true; } if(e._conf) total++; });
+  });
   return total;
 }
 
@@ -452,6 +484,7 @@ function renderHours(){
     const parts=k.split('-'); const lane=+parts[2]; const add=isASkey(k)?HOUR_PER_AS:HOUR_PER_SLOT;
     h[lane]+=add; if(c.co!=null) h[2]+=add;
   });
+  ['as1','as2','as3'].forEach(sk=>{ (state.as[sk]||[]).forEach(e=>{ for(let t=0;t<3;t++) if(e.profs[t]) h[t]+=HOUR_PER_AS; }); });
   for(let i=0;i<3;i++){ const span=document.getElementById('h-p'+i); if(span) span.textContent = h[i] ? '— '+h[i]+' h/sem':''; }
 }
 function renderConflictStatus(n){
@@ -509,15 +542,37 @@ function renderGrid(){
   document.getElementById('gridMount').innerHTML=h;
 }
 function renderAS(){
-  let h='<table class="as"><thead><tr><th class="timecol" rowspan="2">Créneau AS</th><th class="dayhead" colspan="2">Mercredi</th></tr><tr>'+laneHead()+'</tr></thead><tbody>';
+  let h='<table class="as"><thead><tr><th class="timecol">Créneau AS</th><th class="dayhead">Mercredi — activités (APSA) &amp; encadrant(s)</th></tr></thead><tbody>';
   AS_SLOTS.forEach(s=>{
-    h+=`<tr><td class="timecol"><div class="clabel">${s.range}</div><div class="csub">1 h</div></td>`;
-    [0,1].forEach(l=>h+=laneCell('mer',s.key,l));
-    h+='</tr>';
+    h+=`<tr><td class="timecol"><div class="clabel">${s.range}</div><div class="csub">1 h</div></td>
+      <td class="ascell">${renderASentries(s.key)}</td></tr>`;
   });
   h+='</tbody></table>';
   document.getElementById('asMount').innerHTML=h;
 }
+function renderASentries(sk){
+  const list=state.as[sk]||[];
+  let h='<div class="aslist">';
+  list.forEach(e=>{
+    const conf=e._conf?' conf':'';
+    let profs='';
+    for(let t=0;t<3;t++){ const on=e.profs[t];
+      profs+=`<button class="asp${on?' on':''}" style="${on?('background:'+PROF_STYLE[t].color+';border-color:'+PROF_STYLE[t].color+';color:#fff'):''}" title="${escHtml(state.profs[t]||'')}${on?' (encadre)':' (cliquer pour ajouter)'}" onclick="toggleASprof('${sk}','${e.id}',${t})">${escHtml(initials(state.profs[t]))}</button>`;
+    }
+    h+=`<div class="asentry${conf}">
+        <input class="asapsa" value="${escHtml(e.apsa)}" placeholder="APSA (ex : Futsal)" oninput="setAS('${sk}','${e.id}',this.value)">
+        <span class="asprofs">${profs}</span>
+        <button class="asdel" title="Supprimer l'activité" onclick="delAS('${sk}','${e.id}')">✕</button>
+      </div>`;
+  });
+  h+=`<button class="asadd" onclick="addAS('${sk}')">+ activité</button></div>`;
+  return h;
+}
+function addAS(sk){ (state.as[sk]||(state.as[sk]=[])).push(makeASentry()); save(); render(); }
+function delAS(sk,id){ const l=state.as[sk]; if(!l)return; const i=l.findIndex(e=>e.id===id); if(i>-1)l.splice(i,1); save(); render(); }
+function setAS(sk,id,val){ const e=(state.as[sk]||[]).find(x=>x.id===id); if(!e)return; e.apsa=val; saveSoon(); }
+function toggleASprof(sk,id,t){ const e=(state.as[sk]||[]).find(x=>x.id===id); if(!e)return; e.profs[t]=!e.profs[t]; save(); render(); }
+function teacherASAt(t,sk){ return (state.as[sk]||[]).filter(e=>e.profs[t]).map(e=>e.apsa||'(activité)').join(' / '); }
 
 function renderCard(k,c){
   const day=k.split('-')[0];
@@ -666,8 +721,12 @@ function exportXLSX(){
   ws['!cols']=[{wch:20}].concat(Array(DAYS.length*2).fill({wch:20}));
   XLSX.utils.book_append_sheet(wb,ws,'Emploi du temps');
 
-  let a2=[['Association Sportive — Mercredi'],[state.meta.annee],[]].concat(buildBlock(AS_SLOTS,true));
-  const ws2=XLSX.utils.aoa_to_sheet(a2); ws2['!cols']=[{wch:20}].concat(Array(DAYS.length*2).fill({wch:20}));
+  let a2=[['Association Sportive — Mercredi'],[state.meta.annee],[],['Créneau','Activité (APSA)','Encadrant(s)']];
+  AS_SLOTS.forEach(s=>{ const list=state.as[s.key]||[];
+    if(!list.length){ a2.push([s.range,'','']); }
+    else list.forEach((e,i)=>{ const pr=[]; for(let t=0;t<3;t++) if(e.profs[t]) pr.push(state.profs[t]||initials(state.profs[t])); a2.push([i===0?s.range:'', e.apsa, pr.join(' + ')]); });
+  });
+  const ws2=XLSX.utils.aoa_to_sheet(a2); ws2['!cols']=[{wch:18},{wch:26},{wch:30}];
   XLSX.utils.book_append_sheet(wb,ws2,'AS Mercredi');
 
   const h=[0,0,0];
@@ -711,6 +770,7 @@ function setView(v){
 function teacherHours(){ const h=[0,0,0];
   Object.keys(state.cells).forEach(k=>{ const c=state.cells[k]; if(!c)return;
     const lane=+k.split('-')[2]; const add=isASkey(k)?HOUR_PER_AS:HOUR_PER_SLOT; h[lane]+=add; if(c.co!=null) h[2]+=add; });
+  ['as1','as2','as3'].forEach(sk=>{ (state.as[sk]||[]).forEach(e=>{ for(let t=0;t<3;t++) if(e.profs[t]) h[t]+=HOUR_PER_AS; }); });
   return h; }
 /* classe(s) de l'enseignant t (0,1 = titulaires ; 2 = TZR via co-animation) à un créneau */
 function teacherClassAt(t,day,slotKey){
@@ -735,7 +795,7 @@ function profGrid(t){
   });
   AS_SLOTS.forEach(s=>{
     h+=`<tr><td class="ptt-time"><b>${s.range}</b><span>AS · 1 h</span></td>`;
-    DAYS.forEach(d=>{ h+= d.key==='mer' ? profCell(teacherClassAt(t,'mer',s.key)) : '<td class="ptt-off"></td>'; });
+    DAYS.forEach(d=>{ h+= d.key==='mer' ? profCell(teacherASAt(t,s.key)) : '<td class="ptt-off"></td>'; });
     h+='</tr>';
   });
   h+='</tbody></table>';
@@ -782,7 +842,7 @@ function exportProfXLSX(){
   for(let t=0;t<3;t++){
     const aoa=[[state.profs[t]||roles[t]],[(state.meta.etab||'')+' · '+(state.meta.annee||'')],[],['Horaire',...DAYS.map(d=>d.label)]];
     SLOTS.forEach(s=>{ const r=[s.range]; DAYS.forEach(d=>r.push(isDisabled(d.key,s.key)?'':teacherClassAt(t,d.key,s.key))); aoa.push(r); });
-    AS_SLOTS.forEach(s=>{ const r=[s.range+' (AS)']; DAYS.forEach(d=>r.push(d.key==='mer'?teacherClassAt(t,'mer',s.key):'')); aoa.push(r); });
+    AS_SLOTS.forEach(s=>{ const r=[s.range+' (AS)']; DAYS.forEach(d=>r.push(d.key==='mer'?teacherASAt(t,s.key):'')); aoa.push(r); });
     const ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=[{wch:18}].concat(Array(DAYS.length).fill({wch:14}));
     let name=(state.profs[t]||roles[t]).replace(/[\\\/?*\[\]:]/g,' ').slice(0,26).trim()||roles[t];
     if(usedNames[name]) name=(name+' ('+(t+1)+')').slice(0,31);
