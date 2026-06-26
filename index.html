@@ -55,7 +55,15 @@
   table.ptt thead th{background:#f4f7fa;font-size:13px;font-weight:700;padding:8px 6px;}
   table.ptt .ptt-time{background:#f7f9fb;text-align:left;padding:9px 11px;width:140px;font-size:12.5px;}
   table.ptt .ptt-time span{display:block;font-size:10px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;}
-  table.ptt td.ptt-c{height:46px;font-size:15px;font-weight:800;}
+  table.ptt td.ptt-c{height:52px;font-size:15px;font-weight:800;padding:0;}
+  .ptt-stack{display:flex;flex-direction:column;height:52px;}
+  .ptt-stack.split .ptt-block,.ptt-stack.split .ptt-empty{height:50%;}
+  .ptt-block{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;line-height:1.1;}
+  .ptt-block.half{border:1px dashed rgba(0,0,0,.18);}
+  .ptt-block.clk{cursor:pointer;}
+  .ptt-block.clk:hover{filter:brightness(.95);}
+  .ptt-empty{height:50%;background:repeating-linear-gradient(45deg,#fafbfc,#fafbfc 5px,#f1f3f5 5px,#f1f3f5 10px);}
+  .ptt-hh{font-size:9px;font-weight:700;opacity:.75;text-transform:uppercase;letter-spacing:.04em;margin-top:1px;}
   table.ptt td.ptt-off{background:repeating-linear-gradient(45deg,#f5f6f8,#f5f6f8 6px,#eef0f3 6px,#eef0f3 12px);}
 
   header.app{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:18px;}
@@ -437,7 +445,7 @@ function defaultState(){
 }
 function makeCard(classe){
   const p=[]; for(let i=0;i<NPER;i++) p.push({act:'',fac:'none'});
-  return {id:'c'+(state.seq++), classe:classe, co:null, open:!state.collapsed, semaine:'AB', h:2, p:p};
+  return {id:'c'+(state.seq++), classe:classe, co:null, open:!state.collapsed, semaine:'AB', h:2, half:1, p:p};
 }
 function makeASentry(){ return {id:'a'+(state.seq++), apsa:'', profs:[true,false,false]}; }
 
@@ -461,6 +469,7 @@ function normalize(){
       if(c.open===undefined) c.open=true;
       if(!c.semaine) c.semaine='AB';
       if(c.h!==1 && c.h!==2) c.h=2;
+      if(c.half!==1 && c.half!==2) c.half=1;
     });
     if(!v.length) delete state.cells[k];
   });
@@ -901,12 +910,38 @@ function profCell(txt){
   const ns=niveauStyle(txt.split('/')[0].trim());
   return `<td class="ptt-c" style="background:${ns.bg};color:${ns.fg}">${escHtml(txt)}</td>`;
 }
+function cycleHalf(id){ const f=findCard(id); if(!f)return; f.card.half=(f.card.half===2?1:2); save(); render(); if(view==='prof') renderProf(); }
+function profBlock(c, half){
+  const ns=niveauStyle(c.classe);
+  const hint = half ? ('<span class="ptt-hh">'+(c.half===2?'2ᵉ heure':'1ʳᵉ heure')+'</span>') : '';
+  const cls = 'ptt-block'+(half?' half clk':'');
+  const title = half ? 'Cours d\'1 h — cliquez pour le placer en '+(c.half===2?'1ʳᵉ':'2ᵉ')+' heure' : '';
+  const onclick = half ? ` onclick="cycleHalf('${c.id}')"` : '';
+  return `<div class="${cls}" style="background:${ns.bg};color:${ns.fg}" title="${title}"${onclick}>${escHtml(lab(c))}${hint}</div>`;
+}
+function profCellMain(t,day,slotKey){
+  const cards = (t<2) ? cardsAt(day,slotKey,t)
+                      : cardsAt(day,slotKey,0).concat(cardsAt(day,slotKey,1)).filter(c=>c.co!=null);
+  if(!cards.length) return '<td class="ptt-c"></td>';
+  const ones = cards.filter(c=>c.h===1), fulls = cards.filter(c=>c.h!==1);
+  if(!ones.length){ // tout en 2 h : un seul bloc plein (alternance A/B montrée par les libellés)
+    const ns=niveauStyle(fulls[0].classe);
+    return `<td class="ptt-c"><div class="ptt-stack"><div class="ptt-block" style="background:${ns.bg};color:${ns.fg}">${escHtml(fulls.map(lab).join(' / '))}</div></div></td>`;
+  }
+  // au moins un cours d'1 h : on coupe la case en deux (1ʳᵉ / 2ᵉ heure)
+  let top='', bottom='';
+  ones.forEach(c=>{ if(c.half===2) bottom+=profBlock(c,true); else top+=profBlock(c,true); });
+  fulls.forEach(c=>{ top+=profBlock(c,true); }); // cas mixte (rare)
+  const topHtml = top || '<div class="ptt-empty"></div>';
+  const botHtml = bottom || '<div class="ptt-empty"></div>';
+  return `<td class="ptt-c"><div class="ptt-stack split">${topHtml}${botHtml}</div></td>`;
+}
 function profGrid(t){
   let h='<table class="ptt"><thead><tr><th class="ptt-time">Horaire</th>';
   DAYS.forEach(d=>h+=`<th>${d.label}</th>`); h+='</tr></thead><tbody>';
   SLOTS.forEach(s=>{
     h+=`<tr><td class="ptt-time"><b>${s.range}</b><span>${s.sub}</span></td>`;
-    DAYS.forEach(d=>{ h+= isDisabled(d.key,s.key) ? '<td class="ptt-off"></td>' : profCell(teacherClassAt(t,d.key,s.key)); });
+    DAYS.forEach(d=>{ h+= isDisabled(d.key,s.key) ? '<td class="ptt-off"></td>' : profCellMain(t,d.key,s.key); });
     h+='</tr>';
   });
   AS_SLOTS.forEach(s=>{
