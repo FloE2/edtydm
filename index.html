@@ -171,6 +171,9 @@
     border:1px solid rgba(0,0,0,.16);border-radius:4px;height:18px;padding:0 5px;line-height:1;white-space:nowrap;}
   .abtns .durbtn:hover{background:rgba(0,0,0,.14);}
   .abtns .durbtn.h1{background:#e6eeff;border-color:#9bb8ea;color:#1f4e9b;}
+  .abtns .halfbtn{cursor:pointer;font-size:9px;font-weight:800;background:#eef7f0;color:#1b6b3a;
+    border:1px solid #b7e0c4;border-radius:4px;height:18px;padding:0 5px;line-height:1;white-space:nowrap;}
+  .abtns .halfbtn:hover{background:#dcefe2;}
   .assign.cellconf{outline:2px solid var(--warn);outline-offset:0;}
 
   .periods{display:flex;flex-direction:column;}
@@ -718,6 +721,7 @@ function renderCard(k,c){
       </span>
       <span class="abtns">
         <button class="durbtn${c.h===1?' h1':''}" title="${c.h===1?'Cours d\'1 h — cliquez pour 2 h':'Cours de 2 h — cliquez pour 1 h (ex : méthodologie)'}" onclick="event.stopPropagation();cycleDuree('${id}')">${c.h===1?'1h':'2h'}</button>
+        ${c.h===1?`<button class="halfbtn" title="Placé en ${c.half===2?'2ᵉ':'1ʳᵉ'} heure du créneau — cliquez pour basculer" onclick="event.stopPropagation();cycleHalf('${id}')">${c.half===2?'2ᵉ h':'1ʳᵉ h'}</button>`:''}
         <button class="sembtn${semCls}" title="${semTitle}" onclick="event.stopPropagation();cycleSemaine('${id}')">${SEM_LABEL[sem]}</button>
         <button class="act co${coCls}" title="${escHtml(coTitle)}" onclick="event.stopPropagation();toggleCo('${id}')">co</button>
         <button class="act" title="Déplacer (tactile)" onclick="event.stopPropagation();armCard('${id}')">⤴</button>
