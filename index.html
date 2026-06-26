@@ -153,6 +153,10 @@
     border:1px solid rgba(0,0,0,.16);border-radius:4px;height:18px;padding:0 5px;line-height:1;white-space:nowrap;letter-spacing:.01em;}
   .abtns .sembtn:hover{background:rgba(0,0,0,.14);}
   .abtns .sembtn.alt{background:#fff4d6;border-color:#e7b24a;color:#7a5400;}
+  .abtns .durbtn{cursor:pointer;font-size:9px;font-weight:800;background:rgba(0,0,0,.07);color:inherit;
+    border:1px solid rgba(0,0,0,.16);border-radius:4px;height:18px;padding:0 5px;line-height:1;white-space:nowrap;}
+  .abtns .durbtn:hover{background:rgba(0,0,0,.14);}
+  .abtns .durbtn.h1{background:#e6eeff;border-color:#9bb8ea;color:#1f4e9b;}
   .assign.cellconf{outline:2px solid var(--warn);outline-offset:0;}
 
   .periods{display:flex;flex-direction:column;}
@@ -282,7 +286,7 @@
   <footer class="note">
     Deux colonnes par jour = vos deux titulaires (bleu = Ens. 1, violet = Ens. 2) ; quand les deux ont cours en même temps, les classes sont côte à côte.
     Chaque créneau est découpé en 4 lignes <b>P1 → P4</b> (les cycles de l'année) : tapez l'activité, le <b>nombre de séances</b> (calculé pour la zone C, vacances et fériés déduits) s'affiche à côté, puis cliquez le bouton de droite pour le <b>lieu</b> (la couleur).
-    Le bouton <code>co</code> ajoute la co-animation TZR ; le bouton <b>hebdo / sem. A / sem. B</b> indique si le cours a lieu toutes les semaines ou une semaine sur deux (deux classes peuvent alors partager un créneau en alternance A/B). Les heures comptent 2 h pour un hebdo, 1 h en moyenne pour une quinzaine, et le décompte de séances est ajusté. Glissez une carte sur une autre case pour déplacer une classe (2 cartes maximum par case). Données enregistrées dans le navigateur ; déposez <code>index.html</code> sur GitHub Pages.
+    Le bouton <code>co</code> ajoute la co-animation TZR ; le bouton <b>2h / 1h</b> change la durée du cours (1 h pour la méthodologie p. ex.) — deux cours d'1 h tiennent alors dans un même créneau ; le bouton <b>hebdo / sem. A / sem. B</b> indique si le cours a lieu toutes les semaines ou une semaine sur deux. Les heures comptent 2 h pour un hebdo, 1 h en moyenne pour une quinzaine, et le décompte de séances est ajusté. Glissez une carte sur une autre case pour déplacer une classe (2 cartes maximum par case). Données enregistrées dans le navigateur ; déposez <code>index.html</code> sur GitHub Pages.
   </footer>
 
   </div><!-- /viewPlan -->
@@ -433,7 +437,7 @@ function defaultState(){
 }
 function makeCard(classe){
   const p=[]; for(let i=0;i<NPER;i++) p.push({act:'',fac:'none'});
-  return {id:'c'+(state.seq++), classe:classe, co:null, open:!state.collapsed, semaine:'AB', p:p};
+  return {id:'c'+(state.seq++), classe:classe, co:null, open:!state.collapsed, semaine:'AB', h:2, p:p};
 }
 function makeASentry(){ return {id:'a'+(state.seq++), apsa:'', profs:[true,false,false]}; }
 
@@ -456,6 +460,7 @@ function normalize(){
       if(c.co===undefined) c.co=null;
       if(c.open===undefined) c.open=true;
       if(!c.semaine) c.semaine='AB';
+      if(c.h!==1 && c.h!==2) c.h=2;
     });
     if(!v.length) delete state.cells[k];
   });
@@ -509,12 +514,14 @@ function computeConflicts(){
   DAYS.forEach(d=>{
     allSlots().forEach(sk=>{
       const a0=cardsAt(d.key,sk,0), a1=cardsAt(d.key,sk,1);
-      // 1) doublon dans une même case (lane) : 2 cartes hebdo/même semaine, ou >2
+      // 1) charge d'une même case (lane) : max 2 h par semaine (A et B), 2 cartes max
       [a0,a1].forEach(arr=>{
         if(arr.length>2){ arr.forEach(c=>{ if(!c._cellConf){c._cellConf=true;total++;} }); }
-        for(let x=0;x<arr.length;x++) for(let y=x+1;y<arr.length;y++){
-          if(weeksOverlap(arr[x].semaine,arr[y].semaine)){ [arr[x],arr[y]].forEach(c=>{ if(!c._cellConf){c._cellConf=true;total++;} }); }
-        }
+        ['A','B'].forEach(W=>{
+          const active=arr.filter(c=> c.semaine==='AB' || c.semaine===W);
+          const sumH=active.reduce((s,c)=> s + (c.h===1?1:2), 0);
+          if(sumH>2){ active.forEach(c=>{ if(!c._cellConf){c._cellConf=true;total++;} }); }
+        });
       });
       const all=a0.concat(a1);
       // 2) installation par période : capacité dépassée sur une même semaine
@@ -560,13 +567,13 @@ function render(){
 function setVal(id,v){ const el=document.getElementById(id); if(el && document.activeElement!==el) el.value=v||''; }
 function renderProfMarks(){ for(let i=0;i<3;i++){ const el=document.getElementById('pm'+i); if(el){ el.style.background=PROF_STYLE[i].color; } } }
 
-function cardHours(c, isAS){ const base=isAS?HOUR_PER_AS:HOUR_PER_SLOT; return (c.semaine==='A'||c.semaine==='B')?base/2:base; }
+function cardHours(c){ const base=(c.h===1?1:HOUR_PER_SLOT); return (c.semaine==='A'||c.semaine==='B')?base/2:base; }
 function fmtH(x){ return Number.isInteger(x)?x:(Math.round(x*10)/10); }
 function renderHours(){
   const h=[0,0,0];
   Object.keys(state.cells).forEach(k=>{ const a=state.cells[k]; if(!a)return;
     const lane=+k.split('-')[2]; const isAS=isASkey(k);
-    a.forEach(c=>{ const hr=cardHours(c,isAS); h[lane]+=hr; if(c.co!=null) h[2]+=hr; });
+    a.forEach(c=>{ const hr=cardHours(c); h[lane]+=hr; if(c.co!=null) h[2]+=hr; });
   });
   ['as1','as2','as3'].forEach(sk=>{ (state.as[sk]||[]).forEach(e=>{ for(let t=0;t<3;t++) if(e.profs[t]) h[t]+=HOUR_PER_AS; }); });
   for(let i=0;i<3;i++){ const span=document.getElementById('h-p'+i); if(span) span.textContent = h[i] ? '— '+fmtH(h[i])+' h/sem':''; }
@@ -693,6 +700,7 @@ function renderCard(k,c){
         <span class="acls" title="${escHtml(c.classe)}">${escHtml(c.classe)}${co?'  + '+escHtml(initials(state.profs[2])):''}${(!open&&anyConf)?' <span class="miniwarn" title="conflit à vérifier">⚠</span>':''}</span>
       </span>
       <span class="abtns">
+        <button class="durbtn${c.h===1?' h1':''}" title="${c.h===1?'Cours d\'1 h — cliquez pour 2 h':'Cours de 2 h — cliquez pour 1 h (ex : méthodologie)'}" onclick="event.stopPropagation();cycleDuree('${id}')">${c.h===1?'1h':'2h'}</button>
         <button class="sembtn${semCls}" title="${semTitle}" onclick="event.stopPropagation();cycleSemaine('${id}')">${SEM_LABEL[sem]}</button>
         <button class="act co${coCls}" title="${escHtml(coTitle)}" onclick="event.stopPropagation();toggleCo('${id}')">co</button>
         <button class="act" title="Déplacer (tactile)" onclick="event.stopPropagation();armCard('${id}')">⤴</button>
@@ -747,9 +755,11 @@ function cellTap(destKey){
 function placeNew(destKey,classe){ const a=cellArr(destKey); if(a.length>=2){ return; }
   const c=makeCard(classe);
   if(a.length===1){ const ex=a[0];
-    if(ex.semaine==='A') c.semaine='B';
-    else if(ex.semaine==='B') c.semaine='A';
-    else { ex.semaine='A'; c.semaine='B'; } // 2e classe -> alternance auto A/B
+    if(((ex.h===1?1:2)+(c.h===1?1:2))>2){ // ne tiennent pas ensemble en hebdo -> alternance A/B
+      if(ex.semaine==='A') c.semaine='B';
+      else if(ex.semaine==='B') c.semaine='A';
+      else { ex.semaine='A'; c.semaine='B'; }
+    }
   }
   a.push(c);
 }
@@ -761,6 +771,7 @@ function delCard(id){ const f=findCard(id); if(!f)return; f.arr.splice(f.arr.ind
 function toggleCo(id){ const f=findCard(id); if(!f)return; f.card.co=(f.card.co==null)?2:null; save(); render(); }
 function toggleCard(id){ const f=findCard(id); if(!f)return; f.card.open=!(f.card.open!==false); save(); render(); }
 function cycleSemaine(id){ const f=findCard(id); if(!f)return; f.card.semaine=SEM_NEXT[f.card.semaine||'AB']; save(); render(); }
+function cycleDuree(id){ const f=findCard(id); if(!f)return; f.card.h=(f.card.h===1?2:1); save(); render(); }
 function toggleAllPeriods(){
   state.collapsed=!state.collapsed;
   Object.keys(state.cells).forEach(k=>{ const a=state.cells[k]; if(a) a.forEach(c=>c.open=!state.collapsed); });
@@ -795,7 +806,7 @@ function cardActivity(c,p,dayKey){ const f=FAC[c.p[p].fac];
 function laneCellHead(d,sk,l){
   const arr=cardsAt(d,sk,l);
   if(!arr.length) return isDisabled(d,sk)?'— AS —':'';
-  return arr.map(c=>c.classe+(c.semaine&&c.semaine!=='AB'?' ['+c.semaine+']':'')+(c.co!=null?' + '+initials(state.profs[2])+' (co)':'')).join('  /  ');
+  return arr.map(c=>c.classe+(c.h===1?' 1h':'')+(c.semaine&&c.semaine!=='AB'?' ['+c.semaine+']':'')+(c.co!=null?' + '+initials(state.profs[2])+' (co)':'')).join('  /  ');
 }
 function laneCellAct(d,sk,l,p){ const arr=cardsAt(d,sk,l); if(!arr.length) return ''; return arr.map(c=>cardActivity(c,p,d)).join('  /  '); }
 function buildBlock(slotList,isAS){
@@ -835,7 +846,7 @@ function exportXLSX(){
 
   const h=[0,0,0];
   Object.keys(state.cells).forEach(k=>{ const a=state.cells[k]; if(!a)return; const lane=+k.split('-')[2]; const isAS=isASkey(k);
-    a.forEach(c=>{ const hr=cardHours(c,isAS); h[lane]+=hr; if(c.co!=null)h[2]+=hr; }); });
+    a.forEach(c=>{ const hr=cardHours(c); h[lane]+=hr; if(c.co!=null)h[2]+=hr; }); });
   ['as1','as2','as3'].forEach(sk=>{ (state.as[sk]||[]).forEach(e=>{ for(let t=0;t<3;t++) if(e.profs[t]) h[t]+=HOUR_PER_AS; }); });
   const a3=[['Enseignant','Heures EPS / semaine']]; state.profs.forEach((p,i)=>a3.push([p,fmtH(h[i])]));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a3),'Récap enseignants');
@@ -875,11 +886,11 @@ function setView(v){
 }
 function teacherHours(){ const h=[0,0,0];
   Object.keys(state.cells).forEach(k=>{ const a=state.cells[k]; if(!a)return; const lane=+k.split('-')[2]; const isAS=isASkey(k);
-    a.forEach(c=>{ const hr=cardHours(c,isAS); h[lane]+=hr; if(c.co!=null) h[2]+=hr; }); });
+    a.forEach(c=>{ const hr=cardHours(c); h[lane]+=hr; if(c.co!=null) h[2]+=hr; }); });
   ['as1','as2','as3'].forEach(sk=>{ (state.as[sk]||[]).forEach(e=>{ for(let t=0;t<3;t++) if(e.profs[t]) h[t]+=HOUR_PER_AS; }); });
   return h; }
 /* classe(s) de l'enseignant t (0,1 = titulaires ; 2 = TZR via co-animation) à un créneau */
-function lab(c){ return c.classe+(c.semaine&&c.semaine!=='AB'?' ('+c.semaine+')':''); }
+function lab(c){ return c.classe+(c.h===1?' · 1h':'')+(c.semaine&&c.semaine!=='AB'?' ('+c.semaine+')':''); }
 function teacherClassAt(t,day,slotKey){
   if(t<2){ return cardsAt(day,slotKey,t).map(lab).join(' / '); }
   const res=[]; cardsAt(day,slotKey,0).concat(cardsAt(day,slotKey,1)).forEach(c=>{ if(c.co!=null) res.push(lab(c)); });
