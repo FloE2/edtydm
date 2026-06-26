@@ -70,7 +70,37 @@
   .ptt-col,.ptt-col .ptt-split{height:100%;}
   table.ptt td.ptt-off{background:repeating-linear-gradient(45deg,#f5f6f8,#f5f6f8 6px,#eef0f3 6px,#eef0f3 12px);}
 
-  header.app{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:18px;}
+  header.app{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:14px;}
+  .head-right{display:flex;align-items:center;gap:12px;}
+  .acct{position:relative;}
+  .acct-pill{display:inline-flex;align-items:center;gap:7px;cursor:pointer;border-radius:20px;font-size:12.5px;font-weight:700;
+    padding:6px 12px;border:1px solid var(--line);background:#fff;color:var(--ink);max-width:230px;}
+  .acct-pill .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none;}
+  .acct-pill .em{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .acct-pill.in{background:#eaf7ee;border-color:#9fdab4;color:#155e34;}
+  .acct-pill.in .dot{background:var(--ok);}
+  .acct-pill.in .dot.saving{background:#e6a100;} .acct-pill.in .dot.error{background:var(--warn);}
+  .acct-pill.out{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .acct-pill.local{color:var(--muted);cursor:default;}
+  .acct-menu{position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--line);border-radius:10px;
+    box-shadow:0 6px 20px rgba(16,32,43,.14);padding:12px;min-width:220px;z-index:30;}
+  .acct-menu .am-email{font-weight:700;font-size:13px;word-break:break-all;}
+  .acct-menu .am-sync{font-size:12px;color:var(--ink-soft);margin:4px 0 10px;}
+
+  .barwrap{position:sticky;top:0;z-index:60;background:var(--bg);padding-bottom:14px;margin-bottom:14px;}
+  .bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:0;padding:10px 12px;
+    background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);}
+  .barbtn{cursor:pointer;border:1px solid var(--line);background:#f7f9fb;color:var(--ink);font-size:13px;font-weight:600;
+    padding:8px 13px;border-radius:7px;display:inline-flex;align-items:center;gap:6px;}
+  .barbtn::before{content:'▸';font-size:10px;color:var(--accent);}
+  .barbtn:hover{border-color:var(--accent);color:var(--accent);}
+  .barbtn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .barbtn.active::before{content:'▾';color:#fff;}
+  .bar-sep{width:1px;height:24px;background:var(--line);margin:0 2px;}
+  #panelHost{position:relative;height:0;}
+  #panelHost .dpanel{position:absolute;left:0;right:0;top:6px;z-index:5;
+    background:var(--surface);border:1px solid var(--line);border-radius:10px;
+    box-shadow:0 10px 30px rgba(16,32,43,.18);padding:14px 16px;margin:0;}
   .titles .eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;}
   .titles h1{font-size:26px;margin:2px 0 0;font-weight:800;letter-spacing:-.01em;}
   .titles .sub{color:var(--ink-soft);font-size:13px;margin-top:3px;}
@@ -234,7 +264,7 @@
 
   @media print{
     body{background:#fff;}
-    .toolbar,.params,.pool,.legend,.armbar,.savebadge,footer.note,.chip .x,.abtns,.asadd,.asdel,.tabs{display:none !important;}
+    .bar,#panelHost,.acct,.toolbar,.params,.pool,.legend,.armbar,.savebadge,footer.note,.chip .x,.abtns,.asadd,.asdel,.tabs{display:none !important;}
     .wrap{max-width:none;padding:0;}
     .gridcard,.panel{box-shadow:none;border:none;}
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
@@ -248,13 +278,14 @@
   <header class="app">
     <div class="titles">
       <div class="eyebrow">Équipe EPS — Programmation annuelle</div>
-      <h1 id="h-etab">Emploi du temps EPS</h1>
+      <h1 id="h-etab">Programmation EPS</h1>
       <div class="sub" id="h-annee">Année scolaire</div>
     </div>
-    <div class="savebadge"><span class="savedot"></span><span id="savetxt">Sauvegarde automatique</span></div>
+    <div class="head-right">
+      <span class="savebadge"><span class="savedot"></span><span id="savetxt">Sauvegarde auto.</span></span>
+      <div class="acct" id="cloudbar"></div>
+    </div>
   </header>
-
-  <div class="cloudbar" id="cloudbar"></div>
 
   <div class="tabs">
     <button class="tab active" id="tab-plan" onclick="setView('plan')">Planification</button>
@@ -263,52 +294,46 @@
 
   <div id="viewPlan">
 
-  <details class="panel params foldable">
-    <summary class="ptitle-row fold-sum">Établissement &amp; enseignants</summary>
-    <div class="fold-body">
-    <div class="grid-meta">
-      <div class="field"><label>Établissement</label><input id="in-etab" type="text"></div>
-      <div class="field"><label>Année scolaire</label><input id="in-annee" type="text"></div>
-      <div class="field"><label><span class="pmark" id="pm0"></span>Enseignant 1 <span class="hours" id="h-p0"></span></label><input id="in-p0" type="text"></div>
-      <div class="field"><label><span class="pmark" id="pm1"></span>Enseignant 2 <span class="hours" id="h-p1"></span></label><input id="in-p1" type="text"></div>
-      <div class="field"><label><span class="pmark" id="pm2"></span>Enseignant TZR (co-anim.) <span class="hours" id="h-p2"></span></label><input id="in-p2" type="text"></div>
-    </div>
-    </div>
-  </details>
-
-  <details class="panel params foldable">
-    <summary class="ptitle-row fold-sum">Périodes de l'année</summary>
-    <div class="fold-body">
-    <div class="grid-meta">
-      <div class="field"><label>Période 1 — début → fin</label><div class="daterow"><input id="in-per0a" type="date"><input id="in-per0b" type="date"></div></div>
-      <div class="field"><label>Période 2 — début → fin</label><div class="daterow"><input id="in-per1a" type="date"><input id="in-per1b" type="date"></div></div>
-      <div class="field"><label>Période 3 — début → fin</label><div class="daterow"><input id="in-per2a" type="date"><input id="in-per2b" type="date"></div></div>
-      <div class="field"><label>Période 4 — début → fin</label><div class="daterow"><input id="in-per3a" type="date"><input id="in-per3b" type="date"></div></div>
-    </div>
-    <div class="calnote">Séances comptées d'après le calendrier officiel <b>zone C 2026‑2027</b> (vacances de Toussaint, Noël, hiver, printemps, été) et les jours fériés en semaine : 11 nov., lundi de Pâques (29 mars), Ascension (6 mai) + pont du 7 mai, lundi de Pentecôte (17 mai). Le lundi de Pentecôte est compté chômé — décochez‑le dans le code si votre établissement travaille ce jour.</div>
-    </div>
-  </details>
-
-  <div class="toolbar">
-    <button class="btn primary" onclick="exportPDF()">⬇︎ Export PDF</button>
-    <button class="btn" onclick="exportXLSX()">⬇︎ Export Excel</button>
-    <button class="btn" id="btnPeriods" onclick="toggleAllPeriods()">▾ Masquer les périodes (P1–P4)</button>
-    <button class="btn ghost" onclick="resetEDT()">↺ Vider l'emploi du temps</button>
+  <div class="barwrap">
+  <div class="bar">
+    <button class="barbtn" data-panel="etab" onclick="openPanel('etab')">Établissement &amp; enseignants</button>
+    <button class="barbtn" data-panel="periodes" onclick="openPanel('periodes')">Périodes</button>
+    <button class="barbtn" data-panel="legende" onclick="openPanel('legende')">Légende</button>
+    <button class="barbtn" data-panel="reserve" onclick="openPanel('reserve')">Réserve de classes</button>
+    <span class="bar-sep"></span>
+    <button class="btn primary" onclick="exportPDF()">⬇︎ PDF</button>
+    <button class="btn" onclick="exportXLSX()">⬇︎ Excel</button>
+    <button class="btn" id="btnPeriods" onclick="toggleAllPeriods()">▾ Masquer périodes</button>
+    <button class="btn ghost" onclick="resetEDT()">↺ Vider</button>
     <span id="conflictStatus" class="conflict-status ok">✓ Aucun conflit</span>
   </div>
 
-  <details class="panel foldable">
-    <summary class="ptitle-row fold-sum">Légende des couleurs</summary>
-    <div class="fold-body"><div class="legend" id="legend"></div></div>
-  </details>
-
-  <details class="panel foldable">
-    <summary class="ptitle-row fold-sum">Réserve de classes</summary>
-    <div class="fold-body">
+  <div id="panelHost">
+    <div class="dpanel" id="dp-etab" hidden>
+      <div class="grid-meta">
+        <div class="field"><label>Établissement</label><input id="in-etab" type="text"></div>
+        <div class="field"><label>Année scolaire</label><input id="in-annee" type="text"></div>
+        <div class="field"><label><span class="pmark" id="pm0"></span>Enseignant 1 <span class="hours" id="h-p0"></span></label><input id="in-p0" type="text"></div>
+        <div class="field"><label><span class="pmark" id="pm1"></span>Enseignant 2 <span class="hours" id="h-p1"></span></label><input id="in-p1" type="text"></div>
+        <div class="field"><label><span class="pmark" id="pm2"></span>Enseignant TZR (co-anim.) <span class="hours" id="h-p2"></span></label><input id="in-p2" type="text"></div>
+      </div>
+    </div>
+    <div class="dpanel" id="dp-periodes" hidden>
+      <div class="grid-meta">
+        <div class="field"><label>Période 1 — début → fin</label><div class="daterow"><input id="in-per0a" type="date"><input id="in-per0b" type="date"></div></div>
+        <div class="field"><label>Période 2 — début → fin</label><div class="daterow"><input id="in-per1a" type="date"><input id="in-per1b" type="date"></div></div>
+        <div class="field"><label>Période 3 — début → fin</label><div class="daterow"><input id="in-per2a" type="date"><input id="in-per2b" type="date"></div></div>
+        <div class="field"><label>Période 4 — début → fin</label><div class="daterow"><input id="in-per3a" type="date"><input id="in-per3b" type="date"></div></div>
+      </div>
+      <div class="calnote">Séances comptées d'après le calendrier officiel <b>zone C 2026‑2027</b> (vacances de Toussaint, Noël, hiver, printemps, été) et les jours fériés en semaine : 11 nov., lundi de Pâques (29 mars), Ascension (6 mai) + pont du 7 mai, lundi de Pentecôte (17 mai). Le lundi de Pentecôte est compté chômé — décochez‑le dans le code si votre établissement travaille ce jour.</div>
+    </div>
+    <div class="dpanel" id="dp-legende" hidden><div class="legend" id="legend"></div></div>
+    <div class="dpanel" id="dp-reserve" hidden>
       <div class="ptitle" style="margin-bottom:8px">Glissez une classe dans une colonne (ou cliquez la classe puis une case)</div>
       <div class="chips" id="pool"></div>
     </div>
-  </details>
+  </div>
+  </div>
 
   <div class="armbar" id="armbar">
     <span id="armtxt"></span>
@@ -928,6 +953,16 @@ function setView(v){
   document.getElementById('tab-prof').classList.toggle('active', v==='prof');
   if(v==='prof') renderProf();
 }
+let openP=null;
+function openPanel(n){
+  openP=(openP===n)?null:n;
+  ['etab','periodes','legende','reserve'].forEach(p=>{
+    const dp=document.getElementById('dp-'+p); if(dp) dp.hidden=(openP!==p);
+    const b=document.querySelector('.barbtn[data-panel="'+p+'"]'); if(b) b.classList.toggle('active', openP===p);
+  });
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(openP) openPanel(openP); const m=document.getElementById('acctMenu'); if(m&&!m.hidden) m.hidden=true; } });
+document.addEventListener('click',e=>{ const m=document.getElementById('acctMenu'); if(m&&!m.hidden&&!e.target.closest('.acct')) m.hidden=true; });
 function teacherHours(){ const h=[0,0,0];
   Object.keys(state.cells).forEach(k=>{ const a=state.cells[k]; if(!a)return; const lane=+k.split('-')[2]; const isAS=isASkey(k);
     a.forEach(c=>{ const hr=cardHours(c); h[lane]+=hr; if(c.co!=null) h[2]+=hr; }); });
@@ -1061,16 +1096,16 @@ function cloudConfigured(){ return typeof firebase!=='undefined' && FIREBASE_CON
 function cloudStatusLabel(){ return {connected:'✓ synchronisé',saving:'… enregistrement',error:'⚠ erreur de synchro'}[cloudStatus]||''; }
 function setCloudStatus(s){ cloudStatus=s;
   const sy=document.getElementById('cb-sync'); if(sy) sy.textContent=cloudStatusLabel();
-  const d=document.querySelector('#cloudbar .cb-dot'); if(d) d.className='cb-dot '+s;
+  const d=document.querySelector('#cloudbar .dot'); if(d) d.className='dot '+s;
 }
+function toggleAcctMenu(){ const m=document.getElementById('acctMenu'); if(m) m.hidden=!m.hidden; }
 function renderCloudBar(){
   const el=document.getElementById('cloudbar'); if(!el) return;
-  if(!cloudConfigured()){ el.className='cloudbar local'; el.innerHTML='<span class="cb-dot"></span> Mode local (hors-ligne) — le partage Firebase n\'est pas disponible ici, mais fonctionnera une fois le fichier publié sur GitHub Pages.'; return; }
-  if(!cloudUser){ el.className='cloudbar out';
-    el.innerHTML='<span class="cb-dot"></span> Partage d\'équipe activé — connectez-vous pour voir et modifier l\'emploi du temps commun. <button class="btn primary cb-btn" onclick="cloudSignIn()">Se connecter avec Google</button>';
-    return; }
-  el.className='cloudbar in';
-  el.innerHTML='<span class="cb-dot '+cloudStatus+'"></span> Connecté : <b>'+escHtml(cloudUser.email||'')+'</b> <span class="cb-sync" id="cb-sync">'+cloudStatusLabel()+'</span> <button class="btn ghost cb-btn" onclick="cloudSignOut()">Déconnexion</button>';
+  if(!cloudConfigured()){ el.innerHTML='<span class="acct-pill local" title="Le partage Firebase fonctionnera une fois le fichier publié sur GitHub Pages."><span class="dot"></span>Hors‑ligne</span>'; return; }
+  if(!cloudUser){ el.innerHTML='<button class="acct-pill out" onclick="cloudSignIn()" title="Connectez-vous pour voir et modifier l\'emploi du temps commun">Se connecter</button>'; return; }
+  const em=escHtml(cloudUser.email||'compte Google');
+  el.innerHTML='<button class="acct-pill in" onclick="toggleAcctMenu()" title="'+em+'"><span class="dot '+cloudStatus+'"></span><span class="em">'+em+'</span></button>'
+    +'<div class="acct-menu" id="acctMenu" hidden><div class="am-email">'+em+'</div><div class="am-sync" id="cb-sync">'+cloudStatusLabel()+'</div><button class="btn ghost" onclick="cloudSignOut()">Déconnexion</button></div>';
 }
 function initCloud(){
   renderCloudBar();
