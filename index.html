@@ -75,6 +75,12 @@
 
   .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);}
   .params{padding:14px 16px;margin-bottom:12px;}
+  details.foldable{padding:0;margin-bottom:12px;}
+  details.foldable>summary.fold-sum{cursor:pointer;list-style:none;padding:13px 16px;margin:0;display:flex;align-items:center;gap:8px;user-select:none;}
+  details.foldable>summary.fold-sum::-webkit-details-marker{display:none;}
+  details.foldable>summary.fold-sum::before{content:'▸';font-size:11px;color:var(--accent);transition:transform .15s;}
+  details.foldable[open]>summary.fold-sum::before{transform:rotate(90deg);}
+  details.foldable .fold-body{padding:0 16px 14px;}
   .params .grid-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;}
   .field label{display:block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:4px;}
   .field input{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;font-size:14px;color:var(--ink);background:#fbfcfd;}
@@ -251,8 +257,9 @@
     </div>
   </section>
 
-  <section class="panel params">
-    <div class="ptitle-row">Périodes de l'année (cycles) — dates de début / fin · le nombre de séances est calculé pour la zone C</div>
+  <details class="panel params foldable">
+    <summary class="ptitle-row fold-sum">Périodes de l'année</summary>
+    <div class="fold-body">
     <div class="grid-meta">
       <div class="field"><label>Période 1 — début → fin</label><div class="daterow"><input id="in-per0a" type="date"><input id="in-per0b" type="date"></div></div>
       <div class="field"><label>Période 2 — début → fin</label><div class="daterow"><input id="in-per1a" type="date"><input id="in-per1b" type="date"></div></div>
@@ -260,7 +267,8 @@
       <div class="field"><label>Période 4 — début → fin</label><div class="daterow"><input id="in-per3a" type="date"><input id="in-per3b" type="date"></div></div>
     </div>
     <div class="calnote">Séances comptées d'après le calendrier officiel <b>zone C 2026‑2027</b> (vacances de Toussaint, Noël, hiver, printemps, été) et les jours fériés en semaine : 11 nov., lundi de Pâques (29 mars), Ascension (6 mai) + pont du 7 mai, lundi de Pentecôte (17 mai). Le lundi de Pentecôte est compté chômé — décochez‑le dans le code si votre établissement travaille ce jour.</div>
-  </section>
+    </div>
+  </details>
 
   <div class="toolbar">
     <button class="btn primary" onclick="exportPDF()">⬇︎ Export PDF</button>
