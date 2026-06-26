@@ -64,6 +64,10 @@
   .ptt-block.clk:hover{filter:brightness(.95);}
   .ptt-empty{height:50%;background:repeating-linear-gradient(45deg,#fafbfc,#fafbfc 5px,#f1f3f5 5px,#f1f3f5 10px);}
   .ptt-hh{font-size:9px;font-weight:700;opacity:.75;text-transform:uppercase;letter-spacing:.04em;margin-top:1px;}
+  .ptt-cols{display:flex;height:52px;}
+  .ptt-cols .ptt-col{flex:1;min-width:0;}
+  .ptt-cols .ptt-col+.ptt-col{border-left:1px solid var(--line);}
+  .ptt-col,.ptt-col .ptt-split{height:100%;}
   table.ptt td.ptt-off{background:repeating-linear-gradient(45deg,#f5f6f8,#f5f6f8 6px,#eef0f3 6px,#eef0f3 12px);}
 
   header.app{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:18px;}
@@ -175,6 +179,16 @@
     border:1px solid #b7e0c4;border-radius:4px;height:18px;padding:0 5px;line-height:1;white-space:nowrap;}
   .abtns .halfbtn:hover{background:#dcefe2;}
   .assign.cellconf{outline:2px solid var(--warn);outline-offset:0;}
+  .lanewrap{display:flex;flex-direction:column;min-height:62px;gap:5px;height:100%;}
+  .assign.closed{display:flex;flex-direction:column;}
+  .assign.closed .ahead{flex:1;}
+  .assign.closed.dur2{min-height:56px;}
+  .assign.closed.dur1{min-height:27px;}
+  .assign.closed.dur1.pos2{margin-top:auto;}
+  .lanewrap.cols{flex-direction:row;align-items:stretch;gap:5px;}
+  .lanewrap.cols>.assign{flex:1;min-width:0;}
+  .lanewrap.cols .ahead{flex-wrap:wrap;row-gap:3px;}
+  .lanewrap.cols .acls{max-width:100%;}
 
   .periods{display:flex;flex-direction:column;}
   .prow{display:flex;align-items:stretch;gap:0;min-height:23px;border-top:1px solid rgba(0,0,0,.06);cursor:pointer;}
@@ -288,7 +302,7 @@
     <div class="fold-body"><div class="legend" id="legend"></div></div>
   </details>
 
-  <details class="panel foldable" open>
+  <details class="panel foldable">
     <summary class="ptitle-row fold-sum">Réserve de classes</summary>
     <div class="fold-body">
       <div class="ptitle" style="margin-bottom:8px">Glissez une classe dans une colonne (ou cliquez la classe puis une case)</div>
@@ -637,8 +651,9 @@ function laneHead(){
 }
 function laneCell(d,s,l){
   const k=key(d,s,l); const arr=state.cells[k]||[];
+  const cols = arr.length===2 && ((arr[0].semaine==='A'&&arr[1].semaine==='B')||(arr[0].semaine==='B'&&arr[1].semaine==='A'));
   const inner=arr.map(c=>renderCard(k,c)).join('');
-  return `<td class="lane" data-key="${k}" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="dropCell(event,'${k}')" onclick="cellTap('${k}')">${inner}</td>`;
+  return `<td class="lane" data-key="${k}" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="dropCell(event,'${k}')" onclick="cellTap('${k}')"><div class="lanewrap${cols?' cols':''}">${inner}</div></td>`;
 }
 function renderGrid(){
   let h='<table class="edt"><thead><tr><th class="corner timecol" rowspan="2">Horaire</th>';
@@ -721,7 +736,7 @@ function renderCard(k,c){
   const anyConf = c._coConf || c._cellConf || (c._pconf&&c._pconf.some(Boolean));
   const semCls = sem==='AB'?'':' alt';
   const semTitle = sem==='AB'?'Toutes les semaines — cliquez pour passer en quinzaine':'Une semaine sur 2 ('+SEM_LABEL[sem]+') — cliquez pour changer';
-  return `<div class="assign${open?'':' closed'}${c._cellConf?' cellconf':''}">
+  return `<div class="assign${open?'':' closed'}${c._cellConf?' cellconf':''}${open?'':(c.h===1?' dur1'+(c.half===2?' pos2':''):' dur2')}">
     <div class="ahead" draggable="true" ondragstart="dragCard(event,'${id}')" style="background:${ns.bg};color:${ns.fg};border-left:5px solid ${ns.stripe}">
       <span class="ahleft">
         <span class="adisc" title="${open?'Masquer':'Afficher'} les périodes" onclick="event.stopPropagation();toggleCard('${id}')">${open?'▾':'▸'}</span>
@@ -939,19 +954,34 @@ function profBlock(c, half){
   const onclick = half ? ` onclick="cycleHalf('${c.id}')"` : '';
   return `<div class="${cls}" style="background:${ns.bg};color:${ns.fg}" title="${title}"${onclick}>${escHtml(lab(c))}${hint}</div>`;
 }
+function colCell(c){
+  const ns=niveauStyle(c.classe);
+  if(c.h===1){
+    const blk=`<div class="ptt-block half clk" style="background:${ns.bg};color:${ns.fg}" title="Cours d'1 h — cliquez pour changer d'heure" onclick="cycleHalf('${c.id}')">${escHtml(lab(c))}<span class="ptt-hh">${c.half===2?'2ᵉ heure':'1ʳᵉ heure'}</span></div>`;
+    const empt='<div class="ptt-empty"></div>';
+    return `<div class="ptt-col"><div class="ptt-split">${c.half===2?empt+blk:blk+empt}</div></div>`;
+  }
+  return `<div class="ptt-col"><div class="ptt-block" style="background:${ns.bg};color:${ns.fg}">${escHtml(lab(c))}</div></div>`;
+}
 function profCellMain(t,day,slotKey){
   const cards = (t<2) ? cardsAt(day,slotKey,t)
                       : cardsAt(day,slotKey,0).concat(cardsAt(day,slotKey,1)).filter(c=>c.co!=null);
   if(!cards.length) return '<td class="ptt-c"></td>';
+  // 2 cours en alternance A / B -> côte à côte (comme les colonnes du tableur)
+  const split = cards.length===2 &&
+    ((cards[0].semaine==='A'&&cards[1].semaine==='B')||(cards[0].semaine==='B'&&cards[1].semaine==='A'));
+  if(split){
+    const a=cards.find(c=>c.semaine==='A'), b=cards.find(c=>c.semaine==='B');
+    return `<td class="ptt-c"><div class="ptt-cols">${colCell(a)}${colCell(b)}</div></td>`;
+  }
   const ones = cards.filter(c=>c.h===1), fulls = cards.filter(c=>c.h!==1);
-  if(!ones.length){ // tout en 2 h : un seul bloc plein (alternance A/B montrée par les libellés)
+  if(!ones.length){
     const ns=niveauStyle(fulls[0].classe);
     return `<td class="ptt-c"><div class="ptt-stack"><div class="ptt-block" style="background:${ns.bg};color:${ns.fg}">${escHtml(fulls.map(lab).join(' / '))}</div></div></td>`;
   }
-  // au moins un cours d'1 h : on coupe la case en deux (1ʳᵉ / 2ᵉ heure)
   let top='', bottom='';
   ones.forEach(c=>{ if(c.half===2) bottom+=profBlock(c,true); else top+=profBlock(c,true); });
-  fulls.forEach(c=>{ top+=profBlock(c,true); }); // cas mixte (rare)
+  fulls.forEach(c=>{ top+=profBlock(c,true); });
   const topHtml = top || '<div class="ptt-empty"></div>';
   const botHtml = bottom || '<div class="ptt-empty"></div>';
   return `<td class="ptt-c"><div class="ptt-stack split">${topHtml}${botHtml}</div></td>`;
