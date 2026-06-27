@@ -182,11 +182,11 @@
   /* carte d'attribution */
   .assign{border:1px solid var(--line);border-radius:7px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.08);background:#fff;}
   .assign.armed{outline:3px solid var(--accent);outline-offset:1px;}
-  .ahead{display:flex;align-items:center;justify-content:space-between;gap:4px;background:#eef1f4;color:#2a3543;
+  .ahead{display:flex;align-items:center;justify-content:space-between;gap:4px;row-gap:3px;flex-wrap:wrap;background:#eef1f4;color:#2a3543;
     padding:4px 4px 4px 7px;cursor:grab;border-bottom:1px solid rgba(0,0,0,.06);}
   .ahead:active{cursor:grabbing;}
-  .ahead .acls{font-weight:800;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .ahead .ahleft{display:flex;align-items:center;gap:5px;min-width:0;flex:1;}
+  .ahead .acls{font-weight:800;font-size:12px;white-space:nowrap;flex:0 0 auto;}
+  .ahead .ahleft{display:flex;align-items:center;gap:5px;min-width:0;flex:1 1 auto;}
   .ahead .adisc{flex:none;cursor:pointer;font-size:11px;opacity:.65;width:14px;text-align:center;}
   .ahead .adisc:hover{opacity:1;}
   .ahead .miniwarn{color:var(--warn);font-weight:800;margin-left:3px;}
@@ -734,6 +734,7 @@ function setAS(sk,id,val){ const e=(state.as[sk]||[]).find(x=>x.id===id); if(!e)
 function toggleASprof(sk,id,t){ const e=(state.as[sk]||[]).find(x=>x.id===id); if(!e)return; e.profs[t]=!e.profs[t]; save(); render(); }
 function teacherASAt(t,sk){ return (state.as[sk]||[]).filter(e=>e.profs[t]).map(e=>e.apsa||'(activité)').join(' / '); }
 
+function cardLabel(c){ return /m[ée]thodo/i.test(c.classe||'') ? 'M' : (c.classe||''); }
 function renderCard(k,c){
   const day=k.split('-')[0];
   const id=c.id;
@@ -765,7 +766,7 @@ function renderCard(k,c){
     <div class="ahead" draggable="true" ondragstart="dragCard(event,'${id}')" style="background:${ns.bg};color:${ns.fg};border-left:5px solid ${ns.stripe}">
       <span class="ahleft">
         <span class="adisc" title="${open?'Masquer':'Afficher'} les périodes" onclick="event.stopPropagation();toggleCard('${id}')">${open?'▾':'▸'}</span>
-        <span class="acls" title="${escHtml(c.classe)}">${escHtml(c.classe)}${co?'  + '+escHtml(initials(state.profs[2])):''}${(!open&&anyConf)?' <span class="miniwarn" title="conflit à vérifier">⚠</span>':''}</span>
+        <span class="acls" title="${escHtml(c.classe)}">${escHtml(cardLabel(c))}${co?'  + '+escHtml(initials(state.profs[2])):''}${(!open&&anyConf)?' <span class="miniwarn" title="conflit à vérifier">⚠</span>':''}</span>
       </span>
       <span class="abtns">
         <button class="durbtn${c.h===1?' h1':''}" title="${c.h===1?'Cours d\'1 h — cliquez pour 2 h':'Cours de 2 h — cliquez pour 1 h (ex : méthodologie)'}" onclick="event.stopPropagation();cycleDuree('${id}')">${c.h===1?'1h':'2h'}</button>
