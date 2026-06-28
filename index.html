@@ -86,6 +86,15 @@
     box-shadow:0 6px 20px rgba(16,32,43,.14);padding:12px;min-width:220px;z-index:30;}
   .acct-menu .am-email{font-weight:700;font-size:13px;word-break:break-all;}
   .acct-menu .am-sync{font-size:12px;color:var(--ink-soft);margin:4px 0 10px;}
+  .hd-ov{position:fixed;inset:0;background:rgba(16,32,43,.45);display:flex;align-items:center;justify-content:center;z-index:200;padding:18px;}
+  .hd-sheet{background:#fff;border-radius:14px;max-width:460px;width:100%;max-height:82vh;overflow:auto;box-shadow:0 18px 50px rgba(0,0,0,.3);padding:16px 18px;}
+  .hd-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:8px;}
+  .hd-head b{font-size:16px;} .hd-head span{font-weight:800;color:var(--accent);}
+  .hd-row{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:5px 0;border-bottom:1px solid var(--line-soft);}
+  .hd-row b{white-space:nowrap;}
+  .hd-sep{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin:10px 0 2px;}
+  .hd-note{font-size:11.5px;color:var(--ink-soft);background:#f7f9fb;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:12px;}
+  .hd-close{margin-top:12px;width:100%;padding:11px;border-radius:10px;background:var(--accent);color:#fff;font-weight:800;border:none;cursor:pointer;}
 
   .barwrap{position:sticky;top:0;z-index:60;background:var(--bg);padding-bottom:14px;margin-bottom:14px;}
   .bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:0;padding:10px 12px;
@@ -164,15 +173,15 @@
 
   .gridcard{padding:0;margin-bottom:18px;overflow:auto;}
   table.edt,table.as{border-collapse:collapse;}
-  table.edt{width:100%;min-width:1420px;}
+  table.edt{width:100%;min-width:0;}
   table.edt th,table.edt td,table.as th,table.as td{border:1px solid var(--line);}
   .dayhead{background:#eef2f7;font-size:14px;font-weight:800;padding:8px;text-align:center;}
   .lanehead{background:#f4f7fa;font-size:12px;font-weight:700;padding:6px 5px;text-align:center;color:var(--ink);max-width:175px;}
   .corner,.timecol{background:#f7f9fb;}
-  .timecol{width:120px;text-align:left;padding:10px 11px;vertical-align:middle;}
-  .timecol .clabel{font-weight:800;font-size:12.5px;}
-  .timecol .csub{font-size:10.5px;color:var(--muted);letter-spacing:.03em;text-transform:uppercase;margin-top:2px;}
-  td.lane{vertical-align:top;padding:4px;min-width:182px;max-width:205px;background:#fff;transition:.1s;}
+  .timecol{width:84px;text-align:left;padding:9px 9px;vertical-align:middle;}
+  .timecol .clabel{font-weight:800;font-size:11.5px;}
+  .timecol .csub{font-size:10px;color:var(--muted);letter-spacing:.03em;text-transform:uppercase;margin-top:2px;}
+  td.lane{position:relative;vertical-align:top;padding:3px;min-width:96px;max-width:none;background:#fff;transition:.1s;}
   td.lane.dropok{background:#eaf2fe;outline:2px dashed var(--accent);outline-offset:-3px;}
   td.lane.disabled{background:repeating-linear-gradient(45deg,#f3f5f7,#f3f5f7 7px,#eceff2 7px,#eceff2 14px);}
   td.lane.disabled .nope{font-size:10.5px;color:var(--muted);text-align:center;display:block;padding:18px 0;}
@@ -182,10 +191,25 @@
   /* carte d'attribution */
   .assign{border:1px solid var(--line);border-radius:7px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.08);background:#fff;}
   .assign.armed{outline:3px solid var(--accent);outline-offset:1px;}
+  /* --- vue compacte (par défaut) --- */
+  .assign.compact{cursor:pointer;}
+  .ahead.compact{display:flex;align-items:center;justify-content:space-between;gap:4px;height:100%;
+    padding:5px 6px;border-bottom:none;}
+  .ahead.compact .acls{font-weight:800;font-size:12.5px;white-space:nowrap;}
+  .cbadges{display:flex;align-items:center;gap:3px;flex:none;}
+  .cb{font-size:9.5px;font-weight:800;line-height:1.3;border-radius:4px;padding:1px 4px;
+    background:rgba(255,255,255,.65);color:inherit;border:1px solid rgba(0,0,0,.14);}
+  .cb small{font-size:8px;opacity:.85;}
+  .cb-sem{background:#fff3cf;color:#8a6400;border-color:#e9cf86;}
+  .cb-warn{background:#fde7e0;color:#b23b1e;border-color:#f1bca6;}
+  /* --- vue édition (agrandie, en surimpression) --- */
+  .assign.editing{position:absolute;left:3px;top:3px;width:286px;max-width:calc(100vw - 40px);z-index:50;
+    box-shadow:0 14px 34px rgba(16,32,43,.28);border-color:var(--accent);}
+  .abtns .okedit{background:var(--ok,#1b9e4b);color:#fff;border-color:var(--ok,#1b9e4b);font-weight:900;}
   .ahead{display:flex;align-items:center;justify-content:space-between;gap:4px;row-gap:3px;flex-wrap:wrap;background:#eef1f4;color:#2a3543;
     padding:4px 4px 4px 7px;cursor:grab;border-bottom:1px solid rgba(0,0,0,.06);}
   .ahead:active{cursor:grabbing;}
-  .ahead .acls{font-weight:800;font-size:12px;white-space:nowrap;flex:0 0 auto;}
+  .ahead .acls{font-weight:800;font-size:12.5px;white-space:nowrap;flex:0 0 auto;}
   .ahead .ahleft{display:flex;align-items:center;gap:5px;min-width:0;flex:1 1 auto;}
   .ahead .adisc{flex:none;cursor:pointer;font-size:11px;opacity:.65;width:14px;text-align:center;}
   .ahead .adisc:hover{opacity:1;}
@@ -209,16 +233,15 @@
     border:1px solid #b7e0c4;border-radius:4px;height:18px;padding:0 5px;line-height:1;white-space:nowrap;}
   .abtns .halfbtn:hover{background:#dcefe2;}
   .assign.cellconf{outline:2px solid var(--warn);outline-offset:0;}
-  .lanewrap{display:flex;flex-direction:column;min-height:62px;gap:5px;height:100%;}
-  .assign.closed{display:flex;flex-direction:column;}
-  .assign.closed .ahead{flex:1;}
-  .assign.closed.dur2{min-height:56px;}
-  .assign.closed.dur1{min-height:27px;}
-  .assign.closed.dur1.pos2{margin-top:auto;}
+  .lanewrap{display:flex;flex-direction:column;min-height:54px;gap:5px;height:100%;}
+  .assign.compact{display:flex;flex-direction:column;}
+  .assign.compact .ahead{flex:1;}
+  .assign.compact.dur2{min-height:50px;}
+  .assign.compact.dur1{min-height:25px;}
+  .assign.compact.dur1.pos2{margin-top:auto;}
   .lanewrap.cols{flex-direction:row;align-items:stretch;gap:5px;}
   .lanewrap.cols>.assign{flex:1;min-width:0;}
-  .lanewrap.cols .ahead{flex-wrap:wrap;row-gap:3px;}
-  .lanewrap.cols .acls{max-width:100%;}
+  .lanewrap.cols .compact .acls{overflow:hidden;text-overflow:ellipsis;}
 
   .periods{display:flex;flex-direction:column;}
   .prow{display:flex;align-items:stretch;gap:0;min-height:23px;border-top:1px solid rgba(0,0,0,.06);cursor:pointer;}
@@ -303,7 +326,6 @@
     <span class="bar-sep"></span>
     <button class="btn primary" onclick="exportPDF()">⬇︎ PDF</button>
     <button class="btn" onclick="exportXLSX()">⬇︎ Excel</button>
-    <button class="btn" id="btnPeriods" onclick="toggleAllPeriods()">▾ Masquer périodes</button>
     <button class="btn ghost" onclick="resetEDT()">↺ Vider</button>
     <span id="conflictStatus" class="conflict-status ok">✓ Aucun conflit</span>
   </div>
@@ -639,11 +661,48 @@ function fmtH(x){ return Number.isInteger(x)?x:(Math.round(x*10)/10); }
 function renderHours(){
   const h=[0,0,0];
   Object.keys(state.cells).forEach(k=>{ const a=state.cells[k]; if(!a)return;
-    const lane=+k.split('-')[2]; const isAS=isASkey(k);
+    const lane=+k.split('-')[2];
     a.forEach(c=>{ const hr=cardHours(c); h[lane]+=hr; if(c.co!=null) h[2]+=hr; });
   });
   ['as1','as2','as3'].forEach(sk=>{ (state.as[sk]||[]).forEach(e=>{ for(let t=0;t<3;t++) if(e.profs[t]) h[t]+=HOUR_PER_AS; }); });
-  for(let i=0;i<3;i++){ const span=document.getElementById('h-p'+i); if(span) span.textContent = h[i] ? '— '+fmtH(h[i])+' h/sem':''; }
+  for(let i=0;i<3;i++){ const span=document.getElementById('h-p'+i); if(span){
+    if(h[i]){ span.innerHTML='— <u>'+fmtH(h[i])+' h/sem</u>'; span.style.cursor='pointer'; span.title='Voir le détail du calcul'; span.onclick=(ev)=>{ev.stopPropagation();showHoursDetail(i);}; }
+    else { span.textContent=''; span.onclick=null; span.style.cursor=''; }
+  } }
+}
+function hoursDetail(t){
+  const lines=[]; let total=0;
+  Object.keys(state.cells).forEach(k=>{ const a=state.cells[k]; if(!a)return;
+    const parts=k.split('-'), dk=parts[0], sk=parts[1], lane=+parts[2];
+    a.forEach(c=>{
+      const take = t<2 ? (lane===t) : (c.co!=null);
+      if(!take) return;
+      const hr=cardHours(c); total+=hr;
+      const d=DAYS.find(x=>x.key===dk), s=SLOTS.find(x=>x.key===sk);
+      let dur = c.h===1 ? "cours d'1 h" : "2 h";
+      if(c.semaine==='A'||c.semaine==='B') dur='quinzaine (sem. '+c.semaine+')';
+      const co = (t<2 && c.co!=null) ? ' +'+initials(state.profs[2]) : '';
+      lines.push({txt:(d?d.label:dk)+' '+(s?s.range:sk)+' · '+c.classe+co+' — '+dur, h:hr});
+    });
+  });
+  const asLines=[];
+  ['as1','as2','as3'].forEach(sk=>{ (state.as[sk]||[]).forEach(e=>{ if(e.profs[t]){ asLines.push({txt:'AS mercredi · '+(e.apsa||'(activité)'), h:HOUR_PER_AS}); total+=HOUR_PER_AS; } }); });
+  return {lines, asLines, total};
+}
+function showHoursDetail(t){
+  const name = state.profs[t] || ['Enseignant 1','Enseignant 2','TZR'][t];
+  const {lines, asLines, total} = hoursDetail(t);
+  const row = o => '<div class="hd-row"><span>'+escHtml(o.txt)+'</span><b>'+fmtH(o.h)+' h</b></div>';
+  let body='';
+  body += lines.length ? lines.map(row).join('') : '<div class="hd-row"><span>Aucun cours'+(t===2?' co-animé':'')+'</span><b>0 h</b></div>';
+  if(asLines.length){ body += '<div class="hd-sep">Association sportive</div>' + asLines.map(row).join(''); }
+  const ov=document.createElement('div'); ov.className='hd-ov'; ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+  ov.innerHTML='<div class="hd-sheet"><div class="hd-head"><b>'+escHtml(name)+'</b><span>'+fmtH(total)+' h / semaine</span></div>'
+    +'<div class="hd-body">'+body+'</div>'
+    +'<div class="hd-note">Un cours en <b>quinzaine</b> (semaine A ou B) compte pour la <b>moitié</b> de sa durée, car il n\'a lieu qu\'une semaine sur deux (moyenne hebdomadaire). Une activité <b>AS</b> compte 1 h.</div>'
+    +'<button class="hd-close">Fermer</button></div>';
+  ov.querySelector('.hd-close').onclick=()=>ov.remove();
+  document.body.appendChild(ov);
 }
 function renderConflictStatus(n){
   const el=document.getElementById('conflictStatus');
@@ -735,16 +794,34 @@ function toggleASprof(sk,id,t){ const e=(state.as[sk]||[]).find(x=>x.id===id); i
 function teacherASAt(t,sk){ return (state.as[sk]||[]).filter(e=>e.profs[t]).map(e=>e.apsa||'(activité)').join(' / '); }
 
 function cardLabel(c){ return /m[ée]thodo/i.test(c.classe||'') ? 'M' : (c.classe||''); }
+function compactBadges(c){
+  let b='';
+  if(c.semaine==='A'||c.semaine==='B') b+=`<span class="cb cb-sem">${c.semaine}</span>`;
+  if(c.h===1) b+=`<span class="cb cb-h">1h<small>${c.half===2?'·2ᵉ':'·1ʳᵉ'}</small></span>`;
+  const warn = c._coConf || c._cellConf || (c._pconf&&c._pconf.some(Boolean));
+  if(warn) b+=`<span class="cb cb-warn" title="conflit à vérifier">⚠</span>`;
+  return b?`<span class="cbadges">${b}</span>`:'';
+}
 function renderCard(k,c){
   const day=k.split('-')[0];
   const id=c.id;
   const co=c.co!=null;
-  const open=c.open!==false;
+  const ns=niveauStyle(c.classe);
+  if(!c._edit){
+    // --- Vue compacte : on ne montre que la classe + repères. Clic = éditer ---
+    const sizeCls = c.h===1?(' dur1'+(c.half===2?' pos2':'')):' dur2';
+    return `<div class="assign compact${sizeCls}${c._cellConf?' cellconf':''}" draggable="true" ondragstart="dragCard(event,'${id}')" onclick="event.stopPropagation();editCard('${id}')" title="Cliquer pour modifier — glisser pour déplacer">
+      <div class="ahead compact" style="background:${ns.bg};color:${ns.fg};border-left:4px solid ${ns.stripe}">
+        <span class="acls" title="${escHtml(c.classe)}">${escHtml(cardLabel(c))}${co?' +'+escHtml(initials(state.profs[2])):''}</span>
+        ${compactBadges(c)}
+      </div></div>`;
+  }
+  // --- Vue édition : carte agrandie avec tous les réglages + périodes ---
   const coCls = co ? (c._coConf?' on bad':' on') : '';
   const coTitle = co ? (state.profs[2]||'TZR')+' en co-animation — cliquez pour retirer'+(c._coConf?' (TZR déjà sur l\'autre cours !)':'') : 'Ajouter la co-animation TZR';
   const sem=c.semaine||'AB';
   let rows='';
-  if(open) for(let i=0;i<NPER;i++){
+  for(let i=0;i<NPER;i++){
     const f=FAC[c.p[i].fac]||FAC.none;
     const pconf=c._pconf&&c._pconf[i]?' pconf':'';
     const range=state.periods[i]&&state.periods[i].start?(' — '+state.periods[i].start+' → '+state.periods[i].end):'';
@@ -758,15 +835,12 @@ function renderCard(k,c){
         <button class="pfac" title="Lieu : ${f.label} — cliquez pour changer d'installation" onclick="event.stopPropagation();cyclePFac('${id}',${i})">${f.short}</button>
       </div>`;
   }
-  const ns=niveauStyle(c.classe);
-  const anyConf = c._coConf || c._cellConf || (c._pconf&&c._pconf.some(Boolean));
   const semCls = sem==='AB'?'':' alt';
   const semTitle = sem==='AB'?'Toutes les semaines — cliquez pour passer en quinzaine':'Une semaine sur 2 ('+SEM_LABEL[sem]+') — cliquez pour changer';
-  return `<div class="assign${open?'':' closed'}${c._cellConf?' cellconf':''}${open?'':(c.h===1?' dur1'+(c.half===2?' pos2':''):' dur2')}">
+  return `<div class="assign editing${c._cellConf?' cellconf':''}">
     <div class="ahead" draggable="true" ondragstart="dragCard(event,'${id}')" style="background:${ns.bg};color:${ns.fg};border-left:5px solid ${ns.stripe}">
       <span class="ahleft">
-        <span class="adisc" title="${open?'Masquer':'Afficher'} les périodes" onclick="event.stopPropagation();toggleCard('${id}')">${open?'▾':'▸'}</span>
-        <span class="acls" title="${escHtml(c.classe)}">${escHtml(cardLabel(c))}${co?'  + '+escHtml(initials(state.profs[2])):''}${(!open&&anyConf)?' <span class="miniwarn" title="conflit à vérifier">⚠</span>':''}</span>
+        <span class="acls" title="${escHtml(c.classe)}">${escHtml(c.classe)}${co?'  + '+escHtml(initials(state.profs[2])):''}</span>
       </span>
       <span class="abtns">
         <button class="durbtn${c.h===1?' h1':''}" title="${c.h===1?'Cours d\'1 h — cliquez pour 2 h':'Cours de 2 h — cliquez pour 1 h (ex : méthodologie)'}" onclick="event.stopPropagation();cycleDuree('${id}')">${c.h===1?'1h':'2h'}</button>
@@ -775,9 +849,10 @@ function renderCard(k,c){
         <button class="act co${coCls}" title="${escHtml(coTitle)}" onclick="event.stopPropagation();toggleCo('${id}')">co</button>
         <button class="act" title="Déplacer (tactile)" onclick="event.stopPropagation();armCard('${id}')">⤴</button>
         <button class="act" title="Supprimer" onclick="event.stopPropagation();delCard('${id}')">✕</button>
+        <button class="act okedit" title="Fermer" onclick="event.stopPropagation();closeEdit()">✓</button>
       </span>
     </div>
-    ${open?`<div class="periods">${rows}</div>`:''}
+    <div class="periods">${rows}</div>
   </div>`;
 }
 
@@ -815,11 +890,14 @@ function armPool(cl){ arm=(arm&&arm.type==='pool'&&arm.classe===cl)?null:{type:'
 function armCard(id){ arm=(arm&&arm.type==='card'&&arm.id===id)?null:{type:'card',id:id}; render(); }
 function disarm(){ arm=null; render(); }
 function cellTap(destKey){
-  if(!arm) return;
+  if(!arm){ closeEdit(); return; }
   if(arm.type==='pool') placeNew(destKey,arm.classe);
   else moveCard(arm.id,destKey);
   arm=null; save(); render();
 }
+function clearEdits(){ Object.keys(state.cells).forEach(k=>{ const a=state.cells[k]; if(a) a.forEach(c=>{ if(c) delete c._edit; }); }); }
+function editCard(id){ const f=findCard(id); if(!f) return; const was=f.card._edit; clearEdits(); if(!was) f.card._edit=true; render(); }
+function closeEdit(){ let had=false; Object.keys(state.cells).forEach(k=>{ const a=state.cells[k]; if(a) a.forEach(c=>{ if(c&&c._edit){had=true; delete c._edit;} }); }); if(had) render(); }
 
 /* ---------- Manipulation (cases = tableaux, max 2 cartes) ---------- */
 function placeNew(destKey,classe){ const a=cellArr(destKey); if(a.length>=2){ return; }
@@ -962,7 +1040,7 @@ function openPanel(n){
     const b=document.querySelector('.barbtn[data-panel="'+p+'"]'); if(b) b.classList.toggle('active', openP===p);
   });
 }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(openP) openPanel(openP); const m=document.getElementById('acctMenu'); if(m&&!m.hidden) m.hidden=true; } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeEdit(); if(openP) openPanel(openP); const m=document.getElementById('acctMenu'); if(m&&!m.hidden) m.hidden=true; } });
 document.addEventListener('click',e=>{ const m=document.getElementById('acctMenu'); if(m&&!m.hidden&&!e.target.closest('.acct')) m.hidden=true; });
 function teacherHours(){ const h=[0,0,0];
   Object.keys(state.cells).forEach(k=>{ const a=state.cells[k]; if(!a)return; const lane=+k.split('-')[2]; const isAS=isASkey(k);
